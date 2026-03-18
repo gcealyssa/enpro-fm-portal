@@ -457,10 +457,21 @@ async def _handle_governance(message: str, intent: str) -> dict:
 
 
 async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
-    """Handle lookup, price, compare, manufacturer via Pandas search."""
+    """Handle lookup, price, compare, manufacturer, supplier via Pandas search."""
+    # Strip command prefix from message (e.g., "manufacturer Pall" → "Pall")
+    _prefixes = ["lookup", "price", "compare", "manufacturer", "supplier"]
+    clean_msg = message.strip()
+    for prefix in _prefixes:
+        if clean_msg.lower().startswith(prefix + " "):
+            clean_msg = clean_msg[len(prefix):].strip()
+            break
+        elif clean_msg.lower().startswith(prefix + ":"):
+            clean_msg = clean_msg[len(prefix) + 1:].strip()
+            break
+
     if intent == "lookup":
         # Try direct part lookup first
-        words = message.split()
+        words = clean_msg.split()
         for word in words:
             product = lookup_part(df, word)
             if product:
@@ -471,7 +482,7 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
                     "products": [product],
                 }
         # Fall through to search
-        result = search_products(df, message)
+        result = search_products(df, clean_msg)
         return {
             "response": _format_search_response(result),
             "intent": intent,
@@ -480,7 +491,7 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
         }
 
     elif intent == "price":
-        result = search_products(df, message, max_results=5)
+        result = search_products(df, clean_msg, max_results=5)
         products = result.get("results", [])
         if products:
             lines = ["Here's the pricing I found [V25 FILTERS]:\n"]
@@ -502,7 +513,7 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
         }
 
     elif intent == "compare":
-        result = search_products(df, message, max_results=10)
+        result = search_products(df, clean_msg, max_results=10)
         products = result.get("results", [])
         if len(products) >= 2:
             lines = [f"Comparison of {len(products)} products [V25 FILTERS]:\n"]
@@ -532,7 +543,7 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
         }
 
     elif intent == "manufacturer":
-        result = search_products(df, message, max_results=10)
+        result = search_products(df, clean_msg, field="Final_Manufacturer", max_results=10)
         products = result.get("results", [])
         if products:
             mfrs = set(p.get("Final_Manufacturer", "") for p in products if p.get("Final_Manufacturer"))
@@ -560,11 +571,11 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
 
     elif intent == "supplier":
         # Search specifically by Supplier_Code
-        result = search_products(df, message, field="Supplier_Code", max_results=10)
+        result = search_products(df, clean_msg, field="Supplier_Code", max_results=10)
         products = result.get("results", [])
         if not products:
             # Fall back to general search
-            result = search_products(df, message, max_results=10)
+            result = search_products(df, clean_msg, max_results=10)
             products = result.get("results", [])
         if products:
             lines = [f"Found {result['total_found']} products [V25 FILTERS]:\n"]
