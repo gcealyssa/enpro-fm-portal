@@ -32,11 +32,7 @@ ESCALATION_KEYWORDS = [
 
 ESCALATION_RESPONSE = (
     "This application requires engineering review. "
-    "Please contact EnPro Filtration directly:\n"
-    "- Phone: 1-800-ENPRO\n"
-    "- Email: engineering@enprofiltration.com\n\n"
-    "Conditions involving extreme temperatures (>400F), high pressures (>150 PSI), "
-    "corrosive chemicals, or specialty micron ratings require custom engineering solutions."
+    "Contact EnPro: service@enproinc.com | 1 (800) 323-2416"
 )
 
 # ---------------------------------------------------------------------------
@@ -48,11 +44,7 @@ OUT_OF_SCOPE_PATTERNS = [
     r"\b(write me|create a|generate a)\b(?!.*quote)",
 ]
 
-OUT_OF_SCOPE_RESPONSE = (
-    "I'm the EnPro Filtration Mastermind — I specialize in industrial filtration products, "
-    "filter selection, chemical compatibility, and equipment specifications. "
-    "I can't help with that topic, but I'd love to help you find the right filter!"
-)
+OUT_OF_SCOPE_RESPONSE = "Outside my scope. I'm built for filtration."
 
 # ---------------------------------------------------------------------------
 # Pre-checks — run BEFORE any GPT call
@@ -100,8 +92,9 @@ def _check_override_attempt(message: str, context: Optional[dict] = None) -> Opt
                 "intercepted": True,
                 "check": "override_attempt",
                 "response": (
-                    "I appreciate the creativity, but I'm purpose-built for industrial filtration. "
-                    "My knowledge base and rules are fixed. How can I help you find the right filter?"
+                    "I cannot approve a recommendation that bypasses safety or engineering governance. "
+                    "These constraints protect you and your customer. "
+                    "Safety and engineering governance cannot be overridden regardless of authorization level."
                 ),
             }
     return None
@@ -151,9 +144,8 @@ def _check_volume_pricing(message: str, context: Optional[dict] = None) -> Optio
                 "intercepted": True,
                 "check": "volume_pricing",
                 "response": (
-                    "Volume and bulk pricing is handled by your EnPro sales representative. "
-                    "They can set up blanket POs and quantity discounts.\n\n"
-                    "Contact your rep or call 1-800-ENPRO for volume pricing."
+                    "Contact EnPro for volume pricing — "
+                    "service@enproinc.com or 1 (800) 323-2416."
                 ),
             }
     return None
@@ -172,10 +164,8 @@ def _check_shipping(message: str, context: Optional[dict] = None) -> Optional[di
                 "intercepted": True,
                 "check": "shipping",
                 "response": (
-                    "Shipping and delivery timelines depend on your location and order specifics. "
-                    "Please contact EnPro's order desk for delivery estimates:\n"
-                    "- Phone: 1-800-ENPRO\n"
-                    "- Email: orders@enprofiltration.com"
+                    "Contact EnPro for shipping and delivery — "
+                    "service@enproinc.com or 1 (800) 323-2416."
                 ),
             }
     return None
@@ -269,8 +259,8 @@ def run_post_check(response: str) -> dict:
 
     # Check for bullet list formatting (responses should use bullets, not paragraphs)
     line_count = len(response.strip().split("\n"))
-    if line_count > 5 and "- " not in response and "* " not in response and "1." not in response:
-        issues.append("Response is long but not formatted as bullet list")
+    if line_count > 5 and "1." not in response:
+        issues.append("Response is long but not formatted as numbered list")
 
     return {
         "valid": len(issues) == 0,

@@ -1,6 +1,6 @@
 """
 EnPro Filtration Mastermind Portal — Search Engine
-Pandas-based 8-column cascade search with normalization, multi-word AND,
+Pandas-based 5-column cascade search with normalization, multi-word AND,
 stock filtering, and clean product formatting.
 """
 
@@ -20,10 +20,7 @@ CASCADE_COLUMNS = [
     "Supplier_Code",
     "Alt_Code",
     "Description",
-    "Extended_Description",
     "Product_Type",
-    "Product_Group_Description",
-    "Final_Manufacturer",
 ]
 
 # ---------------------------------------------------------------------------
@@ -55,10 +52,10 @@ HIDDEN_FIELDS = [
 
 # Stock location mapping
 STOCK_LOCATIONS = {
-    "Qty_Loc_10": "EnPro Inc",
-    "Qty_Loc_12": "EnPro Charlotte",
-    "Qty_Loc_22": "EnPro Houston",
-    "Qty_Loc_30": "EnPro Kansas City",
+    "Qty_Loc_10": "Houston General Stock",
+    "Qty_Loc_12": "Charlotte",
+    "Qty_Loc_22": "Houston Reserve",
+    "Qty_Loc_30": "Kansas City",
 }
 
 MAX_RESULTS = 10
@@ -184,7 +181,7 @@ def _search_single_field(
 
 def _search_cascade(df: pd.DataFrame, raw_query: str, norm_query: str) -> pd.DataFrame:
     """
-    8-column cascade search.
+    5-column cascade search.
     For Part_Number/Supplier_Code/Alt_Code: normalized exact then contains.
     For description fields: multi-word AND search.
     """
@@ -206,10 +203,7 @@ def _search_cascade(df: pd.DataFrame, raw_query: str, norm_query: str) -> pd.Dat
     # Phase 2: Text columns (multi-word AND)
     text_cols = [
         "Description",
-        "Extended_Description",
         "Product_Type",
-        "Product_Group_Description",
-        "Final_Manufacturer",
     ]
     words = raw_query.lower().split()
     if not words:
@@ -258,6 +252,12 @@ def format_product(row: pd.Series) -> dict:
         if pd.isna(val) or val == "" or val == 0:
             continue
         product[field] = val
+
+    # Handle dual column names — try V25 first, fall back to V5
+    if "Final_Manufacturer" not in product:
+        mfr = row.get("Manufacturer", "")
+        if not pd.isna(mfr) and mfr != "" and mfr != 0:
+            product["Final_Manufacturer"] = mfr
 
     # Price logic: Last_Sell_Price primary, Price_1 fallback
     last_sell = _to_float(row.get("Last_Sell_Price", 0))
