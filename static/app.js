@@ -5,10 +5,23 @@
 (function () {
     'use strict';
 
-    // Inject clickable card link styles
+    // Inject clickable card link + simulate mode styles
     (function() {
         var style = document.createElement('style');
-        style.textContent = '.card-link { color: var(--accent); cursor: pointer; text-decoration: none; border-bottom: 1px dashed var(--accent); transition: color 0.15s; } .card-link:hover { color: var(--navy); border-bottom-color: var(--navy); }';
+        style.textContent = [
+            '.card-link { color: var(--accent); cursor: pointer; text-decoration: none; border-bottom: 1px dashed var(--accent); transition: color 0.15s; }',
+            '.card-link:hover { color: var(--navy); border-bottom-color: var(--navy); }',
+            '.sim-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 2000; background: linear-gradient(135deg, #003366, #0066CC); color: white; padding: 12px 20px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); font-family: inherit; }',
+            '.sim-bar-title { font-weight: 700; font-size: 14px; white-space: nowrap; }',
+            '.sim-bar-step { font-size: 13px; opacity: 0.9; white-space: nowrap; }',
+            '.sim-bar-progress { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; }',
+            '.sim-bar-fill { height: 100%; background: white; border-radius: 3px; transition: width 0.5s ease; }',
+            '.sim-bar-btns { display: flex; gap: 8px; }',
+            '.sim-bar-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 500; transition: background 0.15s; }',
+            '.sim-bar-btn:hover { background: rgba(255,255,255,0.3); }',
+            '.sim-narration { position: fixed; top: 52px; left: 0; right: 0; z-index: 1999; background: rgba(0,51,102,0.95); color: white; padding: 10px 20px; font-size: 14px; font-style: italic; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }',
+            '@media (max-width: 600px) { .sim-bar { padding: 8px 12px; gap: 8px; flex-wrap: wrap; } .sim-bar-title { font-size: 12px; } .sim-narration { font-size: 12px; top: 60px; } }',
+        ].join('\n');
         document.head.appendChild(style);
     })();
 
@@ -2308,6 +2321,199 @@
         if (voiceSynth.onvoiceschanged !== undefined) {
             voiceSynth.onvoiceschanged = function () { voiceSynth.getVoices(); };
         }
+    }
+
+    // ── Simulate Mode — In-App Live Demo ──
+    var SIM_SCENARIOS = [
+        { label: 'Part Lookup', query: '2004355', pause: 6000,
+          narration: 'Look up any part by number. See specs, stock, and pricing instantly.' },
+        { label: 'Chemical Compatibility', query: 'chemical compatibility of sulfuric acid', pause: 8000,
+          narration: 'Check material ratings for any chemical. A/B/C/D scale with recommendations.' },
+        { label: 'Pre-Call Prep', query: 'pregame pharmaceutical', pause: 8000,
+          narration: 'Prepare for customer calls by industry. Key concerns, products, and opening questions.' },
+        { label: 'Product Search', query: 'search 10 micron filter element', pause: 6000,
+          narration: 'Search by specs — micron, material, product type. In-stock results with pricing.' },
+        { label: 'Compare Products', query: 'compare 2004355 vs CMBF1-30NN', pause: 8000,
+          narration: 'Side-by-side comparison of any two products. Specs, price, availability.' },
+        { label: 'Manufacturer Browse', query: 'manufacturer PPC', pause: 6000,
+          narration: 'Browse by manufacturer. See their full catalog with stock levels.' },
+        { label: 'Real-World Scenario', query: 'I need a filter for hydraulic oil at 10 micron 200F', pause: 10000,
+          narration: 'Describe what you need in plain English. FM finds compatible products automatically.' },
+    ];
+
+    var simState = { running: false, paused: false, step: 0, abortFlag: false };
+
+    window.startSimulate = function () {
+        if (simState.running) return;
+        simState = { running: true, paused: false, step: 0, abortFlag: false };
+
+        // Reset chat
+        if (typeof newChat === 'function') newChat();
+
+        // Create sim bar
+        var bar = document.createElement('div');
+        bar.className = 'sim-bar';
+        bar.id = 'simBar';
+        bar.innerHTML = '<div class="sim-bar-title">&#9654; LIVE DEMO</div>' +
+            '<div class="sim-bar-step" id="simStep">Starting...</div>' +
+            '<div class="sim-bar-progress"><div class="sim-bar-fill" id="simFill" style="width:0%"></div></div>' +
+            '<div class="sim-bar-btns">' +
+                '<button class="sim-bar-btn" id="simPauseBtn" onclick="simPause()">Pause</button>' +
+                '<button class="sim-bar-btn" onclick="simSkip()">Skip</button>' +
+                '<button class="sim-bar-btn" onclick="simExit()">Exit</button>' +
+            '</div>';
+        document.body.appendChild(bar);
+
+        var narr = document.createElement('div');
+        narr.className = 'sim-narration';
+        narr.id = 'simNarration';
+        narr.textContent = 'Watch how your team can find products, check compatibility, and prepare for calls in seconds.';
+        document.body.appendChild(narr);
+
+        // Offset content
+        document.querySelector('.app-shell').style.marginTop = '90px';
+
+        simSleep(3000).then(function () { runSimStep(0); });
+    };
+
+    function simSleep(ms) {
+        return new Promise(function (resolve) {
+            var start = Date.now();
+            function check() {
+                if (simState.abortFlag) { resolve(); return; }
+                if (simState.paused) { setTimeout(check, 100); return; }
+                if (Date.now() - start >= ms) { resolve(); return; }
+                setTimeout(check, 50);
+            }
+            check();
+        });
+    }
+
+    async function runSimStep(idx) {
+        if (idx >= SIM_SCENARIOS.length || simState.abortFlag) {
+            simFinish();
+            return;
+        }
+
+        simState.step = idx;
+        var scenario = SIM_SCENARIOS[idx];
+
+        // Update bar
+        var stepEl = document.getElementById('simStep');
+        var fillEl = document.getElementById('simFill');
+        var narrEl = document.getElementById('simNarration');
+        if (stepEl) stepEl.textContent = 'Step ' + (idx + 1) + ' of ' + SIM_SCENARIOS.length + ': ' + scenario.label;
+        if (fillEl) fillEl.style.width = ((idx / SIM_SCENARIOS.length) * 100) + '%';
+        if (narrEl) narrEl.textContent = scenario.narration;
+
+        // New chat between scenarios (except first)
+        if (idx > 0 && typeof newChat === 'function') newChat();
+        await simSleep(500);
+        if (simState.abortFlag) return;
+
+        // Type query character by character
+        userInput.value = '';
+        userInput.focus();
+        for (var i = 0; i < scenario.query.length; i++) {
+            if (simState.abortFlag) return;
+            await simSleep(50);
+            userInput.value = scenario.query.substring(0, i + 1);
+        }
+
+        await simSleep(400);
+        if (simState.abortFlag) return;
+
+        // Submit
+        handleSend();
+
+        // Wait for response
+        await simWaitForResponse();
+        if (simState.abortFlag) return;
+
+        // Update progress
+        if (fillEl) fillEl.style.width = (((idx + 1) / SIM_SCENARIOS.length) * 100) + '%';
+
+        // Scroll to see results
+        scrollToBottom();
+
+        // Pause for reading
+        await simSleep(scenario.pause);
+        if (simState.abortFlag) return;
+
+        // Next step
+        runSimStep(idx + 1);
+    }
+
+    function simWaitForResponse() {
+        return new Promise(function (resolve) {
+            var checks = 0;
+            function poll() {
+                if (simState.abortFlag) { resolve(); return; }
+                if (!isLoading) { resolve(); return; }
+                checks++;
+                if (checks > 300) { resolve(); return; } // 30s timeout
+                setTimeout(poll, 100);
+            }
+            setTimeout(poll, 500); // Give it a moment to start loading
+        });
+    }
+
+    function simFinish() {
+        simState.running = false;
+        var fillEl = document.getElementById('simFill');
+        if (fillEl) fillEl.style.width = '100%';
+        var stepEl = document.getElementById('simStep');
+        if (stepEl) stepEl.textContent = 'Demo Complete';
+        var narrEl = document.getElementById('simNarration');
+        if (narrEl) narrEl.textContent = '72,904 products. Real-time inventory. $0.02 per query. Ready for your team.';
+
+        setTimeout(function () { simExit(); }, 5000);
+    }
+
+    window.simPause = function () {
+        simState.paused = !simState.paused;
+        var btn = document.getElementById('simPauseBtn');
+        if (btn) btn.textContent = simState.paused ? 'Resume' : 'Pause';
+    };
+
+    window.simSkip = function () {
+        if (simState.running && simState.step < SIM_SCENARIOS.length - 1) {
+            simState.paused = false;
+            simState.abortFlag = true;
+            setTimeout(function () {
+                simState.abortFlag = false;
+                runSimStep(simState.step + 1);
+            }, 100);
+        }
+    };
+
+    window.simExit = function () {
+        simState.abortFlag = true;
+        simState.running = false;
+        simState.paused = false;
+        var bar = document.getElementById('simBar');
+        if (bar) bar.remove();
+        var narr = document.getElementById('simNarration');
+        if (narr) narr.remove();
+        document.querySelector('.app-shell').style.marginTop = '';
+    };
+
+    // Handle /simulate command in chat
+    var origHandleSend = window.handleSend;
+    window.handleSend = function () {
+        var text = userInput.value.trim().toLowerCase();
+        if (text === '/simulate' || text === 'simulate') {
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            startSimulate();
+            return;
+        }
+        origHandleSend();
+    };
+
+    // URL param auto-start: ?simulate=true
+    if (new URLSearchParams(window.location.search).get('simulate') === 'true') {
+        setTimeout(startSimulate, 2000);
     }
 
 })();
