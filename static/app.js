@@ -2709,7 +2709,7 @@
     // Demo scenarios — grouped as FLOWS (3-4 chained commands per flow, no reset between)
     var SIM_SCENARIOS = [
         // FLOW 1: Part lookup → chemical check → compare (real workflow)
-        { label: 'Part Lookup', query: '2004355', pause: 6000, flow: 1,
+        { label: 'Part Lookup', query: '2004355', pause: 6000, flow: 1, autoPin: true,
           narration: 'Flow 1: Start with a part lookup. Rep has a part number from the customer.' },
         { label: 'Chemical Check', query: 'chemical compatibility of sulfuric acid', pause: 8000, flow: 1,
           narration: 'Now check if it handles the customer\'s chemical. A/B/C/D ratings instantly.' },
@@ -2727,7 +2727,7 @@
           narration: 'Filtrox is the depth sheet brand for brewery. Browse their catalog.' },
 
         // FLOW 3: Natural language → expert → chemical (new customer workflow)
-        { label: 'Customer Describes Need', query: 'I need a filter for hydraulic oil at 10 micron 200F in a refinery', pause: 10000, flow: 3,
+        { label: 'Customer Describes Need', query: 'I need a filter for hydraulic oil at 10 micron 200F in a refinery', pause: 10000, flow: 3, autoPin: true,
           narration: 'Flow 3: Customer calls with no part number. Just describes what they need.' },
         { label: 'Ask the Expert', query: 'what filter do I need for glycol dehydration in a gas plant', pause: 10000, flow: 3,
           narration: 'John\'s 30 years of expertise. Application-specific recommendations with KB references.' },
@@ -2838,6 +2838,20 @@
 
         // Scroll to see results
         scrollToBottom();
+
+        // Auto-pin after first lookup in each flow (shows Lane 1 in action)
+        if (scenario.autoPin) {
+            await simSleep(1500);
+            var pinBtns = document.querySelectorAll('.card-action-btn');
+            for (var pb = 0; pb < pinBtns.length; pb++) {
+                if (pinBtns[pb].textContent.includes('Pin')) {
+                    pinBtns[pb].click();
+                    var narrEl2 = document.getElementById('simNarration');
+                    if (narrEl2) narrEl2.textContent = 'Product pinned to Lane 1. Context builds as the conversation continues.';
+                    break;
+                }
+            }
+        }
 
         // Pause for reading
         await simSleep(scenario.pause);
