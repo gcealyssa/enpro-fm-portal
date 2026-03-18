@@ -642,10 +642,10 @@
     <button class="qa-btn" onclick="showModal('search')">
         <span class="qa-icon">&#128196;</span> Search
     </button>
-    <button class="qa-btn" onclick="sendMessage('price')">
+    <button class="qa-btn" onclick="showModal('price')">
         <span class="qa-icon">&#128176;</span> Price
     </button>
-    <button class="qa-btn" onclick="sendMessage('compare')">
+    <button class="qa-btn" onclick="showModal('compare')">
         <span class="qa-icon">&#9878;</span> Compare
     </button>
     <button class="qa-btn" onclick="showModal('manufacturer')">
@@ -716,6 +716,26 @@
             <div class="suggest-dropdown" id="suggestDropdown"></div>
             <select id="chemicalSelect" class="chemical-select" style="display:none; width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; font-family:inherit; background:white; margin-top:8px;">
                 <option value="">-- Or pick from known chemicals --</option>
+            </select>
+            <select id="manufacturerSelect" class="chemical-select" style="display:none; width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; font-family:inherit; background:white; margin-top:8px;">
+                <option value="">-- Pick a manufacturer --</option>
+            </select>
+            <select id="pregameSelect" class="chemical-select" style="display:none; width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; font-family:inherit; background:white; margin-top:8px;">
+                <option value="">-- Pick an industry --</option>
+                <option value="refinery">Refinery / Oil & Gas</option>
+                <option value="brewery">Brewery / Beverage</option>
+                <option value="dairy">Dairy / CIP</option>
+                <option value="municipal water">Municipal Water</option>
+                <option value="pharmaceutical">Pharmaceutical</option>
+                <option value="power plant">Power Plant / Turbine</option>
+                <option value="chemical processing">Chemical Processing</option>
+                <option value="food and beverage">Food & Beverage</option>
+                <option value="hydraulic">Hydraulic Systems</option>
+                <option value="paint and coatings">Paint & Coatings</option>
+                <option value="petrochemical">Petrochemical</option>
+                <option value="pulp and paper">Pulp & Paper</option>
+                <option value="semiconductor">Semiconductor</option>
+                <option value="wastewater">Wastewater</option>
             </select>
             <div class="hint" id="modalHint"></div>
         </div>

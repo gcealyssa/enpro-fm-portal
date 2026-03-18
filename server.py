@@ -259,6 +259,28 @@ async def suggest(q: str = "", mode: str = "exact"):
     return {"suggestions": suggestions}
 
 
+@app.get("/api/manufacturers/list")
+async def manufacturers_list():
+    """Return list of unique manufacturers for dropdown. Pandas only, $0 cost."""
+    if not state.data_loaded or state.df.empty:
+        return {"manufacturers": []}
+
+    col = "Final_Manufacturer" if "Final_Manufacturer" in state.df.columns else "Manufacturer"
+    if col not in state.df.columns:
+        return {"manufacturers": []}
+
+    manufacturers = sorted(
+        state.df[col]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .loc[lambda s: s != ""]
+        .unique()
+        .tolist()
+    )
+    return {"manufacturers": manufacturers}
+
+
 @app.get("/api/chemicals/list")
 async def chemicals_list():
     """Return list of chemical names for dropdown. Pandas only, $0 cost."""

@@ -621,9 +621,10 @@
         // Show/hide lookup mode selector
         lookupModeRow.style.display = type === 'lookup' ? 'block' : 'none';
 
-        // Show/hide chemical dropdown
-        var chemSelect = document.getElementById('chemicalSelect');
-        chemSelect.style.display = type === 'chemical' ? 'block' : 'none';
+        // Show/hide dropdowns per modal type
+        document.getElementById('chemicalSelect').style.display = type === 'chemical' ? 'block' : 'none';
+        document.getElementById('manufacturerSelect').style.display = type === 'manufacturer' ? 'block' : 'none';
+        document.getElementById('pregameSelect').style.display = type === 'pregame' ? 'block' : 'none';
 
         switch (type) {
             case 'lookup':
@@ -660,7 +661,19 @@
                 modalTitle.textContent = 'Meeting Pregame';
                 modalLabel.textContent = 'Customer or Industry';
                 modalInput.placeholder = 'e.g., brewery, refinery, municipal water';
-                modalHint.textContent = 'Enter customer name or industry for meeting prep.';
+                modalHint.textContent = 'Enter customer name or industry, or pick from the list below.';
+                break;
+            case 'price':
+                modalTitle.textContent = 'Price Check';
+                modalLabel.textContent = 'Part Number';
+                modalInput.placeholder = 'e.g., CLR130, EPE-10-5';
+                modalHint.textContent = 'Enter the part number to check pricing.';
+                break;
+            case 'compare':
+                modalTitle.textContent = 'Compare Products';
+                modalLabel.textContent = 'Parts to Compare';
+                modalInput.placeholder = 'e.g., CLR130 vs CLR140';
+                modalHint.textContent = 'Enter part numbers separated by "vs" or spaces.';
                 break;
         }
 
@@ -708,6 +721,8 @@
             case 'manufacturer': sendMessage('manufacturer ' + val); break;
             case 'supplier': sendMessage('supplier ' + val); break;
             case 'pregame': sendMessage('pregame ' + val); break;
+            case 'price': sendMessage('price ' + val); break;
+            case 'compare': sendMessage('compare ' + val); break;
         }
     };
 
@@ -866,5 +881,37 @@
             console.error('Failed to load chemicals list:', err);
         }
     })();
+
+    // ── Load manufacturer names for dropdown ──
+    (async function loadManufacturers() {
+        try {
+            var res = await fetch(API_BASE + '/api/manufacturers/list');
+            var data = await res.json();
+            var manufacturers = data.manufacturers || [];
+            var select = document.getElementById('manufacturerSelect');
+            manufacturers.forEach(function (mfr) {
+                var opt = document.createElement('option');
+                opt.value = mfr;
+                opt.textContent = mfr;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', function () {
+                if (select.value) {
+                    modalInput.value = select.value;
+                    modalSubmit();
+                }
+            });
+        } catch (err) {
+            console.error('Failed to load manufacturers list:', err);
+        }
+    })();
+
+    // ── Pregame dropdown handler ──
+    document.getElementById('pregameSelect').addEventListener('change', function () {
+        if (this.value) {
+            modalInput.value = this.value;
+            modalSubmit();
+        }
+    });
 
 })();

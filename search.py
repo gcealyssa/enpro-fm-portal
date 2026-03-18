@@ -216,6 +216,7 @@ def _search_cascade(df: pd.DataFrame, raw_query: str, norm_query: str) -> pd.Dat
     text_cols = [
         "Description",
         "Product_Type",
+        "Final_Manufacturer",
     ]
     words = raw_query.lower().split()
     if not words:
