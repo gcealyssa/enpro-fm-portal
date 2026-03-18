@@ -140,7 +140,7 @@ Escalation response: "Contact EnPro. service@enproinc.com / 1 (800) 323-2416."
 1. Numbered lists ONLY — no bullets, dashes, or symbols
 2. Every response scannable in 5 seconds — lead with the answer
 3. If response exceeds 8 lines, stage it — core answer first, offer to expand
-4. Data labels: [V25 FILTERS] for catalog data, [NOT IN DATA] for missing fields, [NO PRICE] for $0/blank prices
+4. Data labels:  for catalog data, [NOT IN DATA] for missing fields, [NO PRICE] for $0/blank prices
 5. For pregame/application: cite KB section number
 
 ## FOLLOW-UP
@@ -521,7 +521,7 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
         result = search_products(df, clean_msg, max_results=5)
         products = result.get("results", [])
         if products:
-            lines = ["Here's the pricing I found [V25 FILTERS]:\n"]
+            lines = ["Here's the pricing I found :\n"]
             for i, p in enumerate(products, 1):
                 pn = p.get("Part_Number", "Unknown")
                 price = p.get("Price", "[NO PRICE]. Contact EnPro for pricing")
@@ -566,7 +566,7 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
             spec_keys = ["Description", "Product_Type", "Final_Manufacturer", "Micron", "Media", "Max_Temp_F", "Max_PSI", "Flow_Rate", "Efficiency", "Price"]
             spec_labels = ["Description", "Product Type", "Manufacturer", "Micron", "Media", "Max Temp (F)", "Max PSI", "Flow Rate", "Efficiency", "Price"]
 
-            lines = [f"**Side-by-Side Comparison** [V25 FILTERS]\n"]
+            lines = [f"**Side-by-Side Comparison** \n"]
 
             # Header row
             pn_header = " | ".join(f"**{p.get('Part_Number', '?')}**" for p in products[:5])
@@ -614,7 +614,7 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
         products = result.get("results", [])
         if products:
             mfrs = set(p.get("Final_Manufacturer", "") for p in products if p.get("Final_Manufacturer"))
-            lines = [f"Found {result['total_found']} products [V25 FILTERS]"]
+            lines = [f"Found {result['total_found']} products "]
             if mfrs:
                 lines[0] += f" from: {', '.join(mfrs)}"
             lines[0] += "\n"
@@ -645,7 +645,7 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
             result = search_products(df, clean_msg, max_results=10)
             products = result.get("results", [])
         if products:
-            lines = [f"Found {result['total_found']} products [V25 FILTERS]:\n"]
+            lines = [f"Found {result['total_found']} products :\n"]
             for i, p in enumerate(products[:10], 1):
                 pn = p.get("Part_Number", "Unknown")
                 desc = p.get("Description", "")
@@ -720,7 +720,7 @@ def _try_chemical_fast_path(
     cross_ref = lookup_part_with_chemicals(df, chemicals_df, part_number)
     detected_materials = cross_ref.get("detected_materials", []) if cross_ref else []
 
-    lines = [f"**Chemical Compatibility — {pn}** [V25 FILTERS]\n"]
+    lines = [f"**Chemical Compatibility — {pn}** \n"]
     n = 1
     lines.append(f"{n}. **Part Number:** {pn}")
     n += 1
@@ -957,7 +957,7 @@ def _format_product_response(product: dict) -> str:
     """Format a single product into a clean numbered response string."""
     lines = []
     pn = product.get("Part_Number", "Unknown")
-    lines.append(f"**{pn}** [V25 FILTERS]\n")
+    lines.append(f"**{pn}** \n")
 
     n = 1
     for key in ["Description", "Extended_Description", "Product_Type", "Final_Manufacturer"]:
@@ -1002,7 +1002,7 @@ def _format_search_response(result: dict) -> str:
     if not products:
         return "No products found matching your search. Try a different part number, description, or manufacturer.\nContact: service@enproinc.com | 1 (800) 323-2416"
 
-    lines = [f"Found **{total}** matching products [V25 FILTERS]"]
+    lines = [f"Found **{total}** matching products "]
     if total > len(products):
         lines[0] += f" (showing top {len(products)})"
     lines[0] += ":\n"

@@ -1236,7 +1236,9 @@
     function formatMarkdown(text) {
         if (!text) return '';
         // Strip internal data source labels
-        text = text.replace(/\[V25 FILTERS\]/g, '');
+        text = text.replace(/\[V25 FILTERS\]/gi, '');
+        text = text.replace(/\[V\d+ FILTERS?\]/gi, '');
+        text = text.replace(/V25 FILTERS?/gi, '');
         text = text.replace(/\[NOT IN DATA\]/g, '');
         text = text.replace(/\[NO PRICE\]/g, '');
         text = text.replace(/\[CRITICAL DATA INTEGRITY RULE\][\s\S]*?\[USER MESSAGE\]:/g, '');
@@ -2452,6 +2454,12 @@
         // Update spec count
         var countEl = document.getElementById('ctxSpecCount');
         if (countEl) countEl.textContent = filledCount + '/6';
+
+        // Show quote readiness only when product pinned or 3+ specs filled
+        var readinessEl = document.getElementById('ctxReadiness');
+        if (readinessEl) {
+            readinessEl.style.display = (sessionContext.pinnedPart || filledCount >= 3) ? '' : 'none';
+        }
 
         // Update readiness steps
         var specStep = document.getElementById('ctxStepSpecs');
