@@ -18,6 +18,7 @@
     }
     let lastFollowUps = [];   // Track numbered options
     let isLoading = false;
+    let searchCount = 0;      // Track searches for auto-reset
 
     // ── DOM refs ──
     const chatArea = document.getElementById('chatArea');
@@ -276,7 +277,39 @@
         }
 
         scrollToBottom();
+        searchCount++;
+        checkAutoReset();
     }
+
+    // ── New Chat / Auto-reset after 10 searches ──
+    function checkAutoReset() {
+        if (searchCount >= 10) {
+            appendMessage('bot', formatMarkdown(
+                '**Session limit reached (10 searches).** Starting a fresh chat to keep things fast.\n\n' +
+                'Your previous results are cleared. Use the command bar above to continue.'
+            ));
+            setTimeout(function () { newChat(); }, 2000);
+        }
+    }
+
+    window.newChat = function () {
+        // Clear chat area
+        chatArea.innerHTML = '';
+        // Restore welcome
+        chatArea.innerHTML = '<div class="welcome">' +
+            '<div class="welcome-icon">&#9881;</div>' +
+            '<h2>Welcome to Filtration Mastermind</h2>' +
+            '<p>Your AI-powered filtration product assistant.<br>' +
+            'Ask about parts, chemicals, specs, or use the quick actions above.</p>' +
+            '</div>';
+        // Reset state
+        searchCount = 0;
+        lastFollowUps = [];
+        // New session ID
+        sessionId = crypto.randomUUID ? crypto.randomUUID() : uuidFallback();
+        localStorage.setItem(SESSION_KEY, sessionId);
+        scrollToBottom();
+    };
 
     // ── Render product card ──
     window.renderProductCard = function (p) {
