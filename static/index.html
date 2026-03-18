@@ -619,6 +619,8 @@
             font-size: 13px;
         }
         .modal-body { position: relative; }
+        .chemical-select { cursor: pointer; color: var(--text); }
+        .chemical-select:focus { border-color: var(--accent); outline: none; }
     </style>
 </head>
 <body>
@@ -635,16 +637,34 @@
 <!-- Quick Actions -->
 <div class="quick-actions">
     <button class="qa-btn" onclick="showModal('lookup')">
-        <span class="qa-icon">&#128269;</span> Lookup Part
-    </button>
-    <button class="qa-btn" onclick="showModal('chemical')">
-        <span class="qa-icon">&#9879;</span> Chemical Check
+        <span class="qa-icon">&#128269;</span> Lookup
     </button>
     <button class="qa-btn" onclick="showModal('search')">
-        <span class="qa-icon">&#128196;</span> Search Products
+        <span class="qa-icon">&#128196;</span> Search
     </button>
-    <button class="qa-btn" onclick="sendMessage('Pregame — give me a full briefing for today')">
+    <button class="qa-btn" onclick="sendMessage('price')">
+        <span class="qa-icon">&#128176;</span> Price
+    </button>
+    <button class="qa-btn" onclick="sendMessage('compare')">
+        <span class="qa-icon">&#9878;</span> Compare
+    </button>
+    <button class="qa-btn" onclick="showModal('manufacturer')">
+        <span class="qa-icon">&#127981;</span> Manufacturer
+    </button>
+    <button class="qa-btn" onclick="showModal('supplier')">
+        <span class="qa-icon">&#128230;</span> Supplier
+    </button>
+    <button class="qa-btn" onclick="showModal('chemical')">
+        <span class="qa-icon">&#9879;</span> Chemical
+    </button>
+    <button class="qa-btn" onclick="showModal('pregame')">
         <span class="qa-icon">&#127919;</span> Pregame
+    </button>
+    <button class="qa-btn" onclick="sendMessage('quote ready')">
+        <span class="qa-icon">&#128203;</span> Quote
+    </button>
+    <button class="qa-btn" onclick="sendMessage('help')">
+        <span class="qa-icon">&#10067;</span> Help
     </button>
 </div>
 
@@ -694,6 +714,9 @@
             </div>
             <input type="text" id="modalInput" placeholder="" autocomplete="off" onkeydown="if(event.key==='Enter')modalSubmit()">
             <div class="suggest-dropdown" id="suggestDropdown"></div>
+            <select id="chemicalSelect" class="chemical-select" style="display:none; width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; font-family:inherit; background:white; margin-top:8px;">
+                <option value="">-- Or pick from known chemicals --</option>
+            </select>
             <div class="hint" id="modalHint"></div>
         </div>
         <div class="modal-footer">

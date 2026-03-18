@@ -259,6 +259,36 @@ async def suggest(q: str = "", mode: str = "exact"):
     return {"suggestions": suggestions}
 
 
+@app.get("/api/chemicals/list")
+async def chemicals_list():
+    """Return list of chemical names for dropdown. Pandas only, $0 cost."""
+    if not state.data_loaded or state.chemicals_df.empty:
+        return {"chemicals": []}
+
+    # Try to find the chemical name column
+    name_col = None
+    for col in state.chemicals_df.columns:
+        col_lower = col.lower()
+        if "chemical" in col_lower or "media" in col_lower or "name" in col_lower:
+            name_col = col
+            break
+    if not name_col:
+        # Fall back to first column
+        name_col = state.chemicals_df.columns[0]
+
+    chemicals = sorted(
+        state.chemicals_df[name_col]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .unique()
+        .tolist()
+    )
+    # Remove empty strings
+    chemicals = [c for c in chemicals if c and c != ""]
+    return {"chemicals": chemicals}
+
+
 @app.get("/widget.js")
 async def widget_js():
     """

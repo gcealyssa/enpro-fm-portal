@@ -28,6 +28,7 @@ Intents:
 - price: User is asking about the price of a specific product.
 - compare: User wants to compare two or more products side-by-side.
 - manufacturer: User is asking about a specific manufacturer or brand.
+- supplier: User is asking about a specific supplier or supplier code.
 - chemical: User is asking about chemical compatibility with a filter/media.
 - pregame: User wants pre-sale technical guidance (what filter do I need for X application).
 - application: User describes their application/process and needs a filter recommendation.
@@ -48,6 +49,7 @@ Examples:
 - "how much is the Pall HC9600" → price
 - "compare Pall vs Parker 10 micron" → compare
 - "what Donaldson filters do you carry" → manufacturer
+- "supplier code T1030" → supplier
 - "will polypropylene handle sulfuric acid" → chemical
 - "I need to filter hydraulic oil at 10 micron" → pregame
 - "we run a paint spray booth, what filter works" → application
@@ -259,7 +261,7 @@ SCRIPTED_RESPONSES = {
 # ---------------------------------------------------------------------------
 
 # Pandas-handled intents ($0 cost)
-PANDAS_INTENTS = {"lookup", "price", "compare", "manufacturer"}
+PANDAS_INTENTS = {"lookup", "price", "compare", "manufacturer", "supplier"}
 
 # Scripted intents ($0 cost)
 SCRIPTED_INTENTS = {"quote_ready", "help", "reset"}
@@ -552,6 +554,35 @@ async def _handle_pandas(message: str, intent: str, df: pd.DataFrame) -> dict:
             }
         return {
             "response": "I couldn't find products from that manufacturer. What brand are you looking for?\nContact: service@enproinc.com | 1 (800) 323-2416",
+            "intent": intent,
+            "cost": "$0",
+        }
+
+    elif intent == "supplier":
+        # Search specifically by Supplier_Code
+        result = search_products(df, message, field="Supplier_Code", max_results=10)
+        products = result.get("results", [])
+        if not products:
+            # Fall back to general search
+            result = search_products(df, message, max_results=10)
+            products = result.get("results", [])
+        if products:
+            lines = [f"Found {result['total_found']} products [V25 FILTERS]:\n"]
+            for i, p in enumerate(products[:10], 1):
+                pn = p.get("Part_Number", "Unknown")
+                desc = p.get("Description", "")
+                mfr = p.get("Final_Manufacturer", "")
+                lines.append(f"{i}. **{pn}** — {desc}" + (f" ({mfr})" if mfr else ""))
+            if result["total_found"] > 10:
+                lines.append(f"\n...and {result['total_found'] - 10} more. Want me to narrow it down?")
+            return {
+                "response": "\n".join(lines),
+                "intent": intent,
+                "cost": "$0",
+                "products": products,
+            }
+        return {
+            "response": "No products found for that supplier code. Try a different code or contact EnPro.\nContact: service@enproinc.com | 1 (800) 323-2416",
             "intent": intent,
             "cost": "$0",
         }

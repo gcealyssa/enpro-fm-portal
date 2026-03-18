@@ -234,6 +234,12 @@
                 }
             }
         } else if (data.results && Array.isArray(data.results) && data.results.length > 0) {
+            if (data.total_found !== undefined) {
+                var headerMsg = 'Found **' + data.total_found + '** products';
+                if (data.total_found > data.results.length) headerMsg += ' (showing top ' + data.results.length + ')';
+                headerMsg += ' [V25 FILTERS]:';
+                appendMessage('bot', formatMarkdown(headerMsg));
+            }
             for (var j = 0; j < data.results.length; j++) {
                 var p2 = data.results[j];
                 appendCard(renderProductCard(p2), data.results.length > 1);
@@ -260,6 +266,9 @@
             if (data.follow_ups) {
                 appendFollowUps('', data.follow_ups);
             }
+        } else if (data.total_found !== undefined && data.query !== undefined) {
+            // Search results with 0 matches
+            appendMessage('bot', formatMarkdown('No products found matching "' + (data.query || '') + '".\nTry a different search term or contact EnPro.\nservice@enproinc.com | 1 (800) 323-2416'));
         } else if (typeof data === 'string') {
             appendMessage('bot', formatMarkdown(data));
         } else {
@@ -447,21 +456,29 @@
 
     // ── Follow-up buttons ──
     function appendFollowUps(partNumber, customFollowUps) {
-        var followUps = customFollowUps || [
-            'Chemical compatibility for ' + partNumber,
-            'Similar specs to ' + partNumber,
-            'Other manufacturers for ' + partNumber,
-            'Quote ready for ' + partNumber
-        ];
-
-        var labels = customFollowUps ? customFollowUps : [
-            'Chemical Compatibility',
-            'Similar Specs',
-            'Other Manufacturers',
-            'Quote Ready'
-        ];
-
-        lastFollowUps = followUps;
+        if (customFollowUps) {
+            // Use custom follow-ups as-is
+            lastFollowUps = customFollowUps;
+            var labels = customFollowUps;
+        } else if (partNumber) {
+            // Contextual follow-ups for a specific part
+            lastFollowUps = [
+                'chemical compatibility for ' + partNumber,
+                'price ' + partNumber,
+                'compare ' + partNumber,
+                'manufacturer ' + partNumber,
+                'quote ready'
+            ];
+            var labels = [
+                'Chemical Check',
+                'Price',
+                'Compare',
+                'Manufacturer',
+                'Quote Ready'
+            ];
+        } else {
+            return; // No part and no custom — skip
+        }
 
         var container = document.createElement('div');
         container.className = 'followup-buttons';
@@ -470,8 +487,8 @@
         labels.forEach(function (label, i) {
             var btn = document.createElement('button');
             btn.className = 'followup-btn';
-            btn.textContent = (i + 1) + '. ' + label;
-            btn.onclick = function () { sendMessage(followUps[i]); };
+            btn.textContent = label;
+            btn.onclick = function () { sendMessage(lastFollowUps[i]); };
             container.appendChild(btn);
         });
 
@@ -604,6 +621,10 @@
         // Show/hide lookup mode selector
         lookupModeRow.style.display = type === 'lookup' ? 'block' : 'none';
 
+        // Show/hide chemical dropdown
+        var chemSelect = document.getElementById('chemicalSelect');
+        chemSelect.style.display = type === 'chemical' ? 'block' : 'none';
+
         switch (type) {
             case 'lookup':
                 modalTitle.textContent = 'Lookup Part';
@@ -622,6 +643,24 @@
                 modalLabel.textContent = 'Search Query';
                 modalInput.placeholder = 'e.g., 10 micron bag filter';
                 modalHint.textContent = 'Describe what you need — specs, type, application.';
+                break;
+            case 'manufacturer':
+                modalTitle.textContent = 'Manufacturer Search';
+                modalLabel.textContent = 'Manufacturer Name';
+                modalInput.placeholder = 'e.g., Pall, Graver, Filtrox';
+                modalHint.textContent = 'Enter manufacturer name to see their products.';
+                break;
+            case 'supplier':
+                modalTitle.textContent = 'Supplier Code Lookup';
+                modalLabel.textContent = 'Supplier Code';
+                modalInput.placeholder = 'e.g., T1030000000';
+                modalHint.textContent = 'Enter the supplier/OEM part number.';
+                break;
+            case 'pregame':
+                modalTitle.textContent = 'Meeting Pregame';
+                modalLabel.textContent = 'Customer or Industry';
+                modalInput.placeholder = 'e.g., brewery, refinery, municipal water';
+                modalHint.textContent = 'Enter customer name or industry for meeting prep.';
                 break;
         }
 
@@ -666,6 +705,9 @@
             case 'lookup': doLookup(val, mode); break;
             case 'chemical': doChemical(val); break;
             case 'search': doSearch(val); break;
+            case 'manufacturer': sendMessage('manufacturer ' + val); break;
+            case 'supplier': sendMessage('supplier ' + val); break;
+            case 'pregame': sendMessage('pregame ' + val); break;
         }
     };
 
@@ -799,5 +841,30 @@
 
     // ── Expose for inline onclick ──
     window.sendMessage = sendMessage;
+
+    // ── Load chemical names for dropdown ──
+    (async function loadChemicals() {
+        try {
+            var res = await fetch(API_BASE + '/api/chemicals/list');
+            var data = await res.json();
+            var chemicals = data.chemicals || [];
+            var select = document.getElementById('chemicalSelect');
+            chemicals.forEach(function (chem) {
+                var opt = document.createElement('option');
+                opt.value = chem;
+                opt.textContent = chem;
+                select.appendChild(opt);
+            });
+            // When user picks from dropdown, fill the input and submit
+            select.addEventListener('change', function () {
+                if (select.value) {
+                    modalInput.value = select.value;
+                    modalSubmit();
+                }
+            });
+        } catch (err) {
+            console.error('Failed to load chemicals list:', err);
+        }
+    })();
 
 })();
