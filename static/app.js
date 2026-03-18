@@ -583,6 +583,132 @@
         }
     };
 
+    // ── Typeahead / Autocomplete ──
+    var suggestDropdown = document.getElementById('suggestDropdown');
+    var suggestTimer = null;
+    var suggestSelectedIndex = -1;
+    var suggestItems = [];
+
+    modalInput.addEventListener('input', function () {
+        if (currentModalType !== 'lookup') return;
+        var q = modalInput.value.trim();
+        clearTimeout(suggestTimer);
+        suggestSelectedIndex = -1;
+
+        if (q.length < 2) {
+            suggestDropdown.classList.remove('active');
+            suggestDropdown.innerHTML = '';
+            return;
+        }
+
+        // Debounce 250ms
+        suggestTimer = setTimeout(function () {
+            fetchSuggestions(q);
+        }, 250);
+    });
+
+    // Arrow keys + Enter in the suggest dropdown
+    modalInput.addEventListener('keydown', function (e) {
+        if (currentModalType !== 'lookup') return;
+        if (!suggestDropdown.classList.contains('active')) return;
+
+        var items = suggestDropdown.querySelectorAll('.suggest-item');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            suggestSelectedIndex = Math.min(suggestSelectedIndex + 1, items.length - 1);
+            updateSuggestHighlight(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            suggestSelectedIndex = Math.max(suggestSelectedIndex - 1, -1);
+            updateSuggestHighlight(items);
+        } else if (e.key === 'Enter' && suggestSelectedIndex >= 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            selectSuggestion(suggestItems[suggestSelectedIndex]);
+        } else if (e.key === 'Escape') {
+            suggestDropdown.classList.remove('active');
+            suggestSelectedIndex = -1;
+        }
+    });
+
+    function updateSuggestHighlight(items) {
+        items.forEach(function (el, i) {
+            el.classList.toggle('selected', i === suggestSelectedIndex);
+        });
+        if (suggestSelectedIndex >= 0 && items[suggestSelectedIndex]) {
+            items[suggestSelectedIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    async function fetchSuggestions(query) {
+        suggestDropdown.innerHTML = '<div class="suggest-loading">Searching...</div>';
+        suggestDropdown.classList.add('active');
+
+        try {
+            var res = await fetch(API_BASE + '/api/suggest?q=' + encodeURIComponent(query));
+            var data = await res.json();
+            suggestItems = data.suggestions || [];
+
+            if (suggestItems.length === 0) {
+                suggestDropdown.innerHTML = '<div class="suggest-loading">No matches found</div>';
+                return;
+            }
+
+            var html = '';
+            suggestItems.forEach(function (item, i) {
+                html += '<div class="suggest-item" data-index="' + i + '">';
+                html += '<div class="suggest-pn">' + esc(item.Part_Number || '') + '</div>';
+                html += '<div class="suggest-desc">' + esc(item.Description || '') + '</div>';
+                if (item.Manufacturer) {
+                    html += '<div class="suggest-mfr">' + esc(item.Manufacturer) + '</div>';
+                }
+                html += '</div>';
+            });
+            suggestDropdown.innerHTML = html;
+
+            // Click handlers
+            suggestDropdown.querySelectorAll('.suggest-item').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    var idx = parseInt(el.dataset.index);
+                    selectSuggestion(suggestItems[idx]);
+                });
+            });
+        } catch (err) {
+            suggestDropdown.innerHTML = '<div class="suggest-loading">Search error</div>';
+            console.error('Suggest error:', err);
+        }
+    }
+
+    function selectSuggestion(item) {
+        if (!item) return;
+        modalInput.value = item.Part_Number;
+        suggestDropdown.classList.remove('active');
+        suggestDropdown.innerHTML = '';
+        suggestSelectedIndex = -1;
+        // Auto-submit the lookup
+        modalSubmit();
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.modal-body')) {
+            suggestDropdown.classList.remove('active');
+            suggestSelectedIndex = -1;
+        }
+    });
+
+    // Clear dropdown when modal closes
+    var origHideModal = window.hideModal;
+    window.hideModal = function (e) {
+        suggestDropdown.classList.remove('active');
+        suggestDropdown.innerHTML = '';
+        suggestSelectedIndex = -1;
+        suggestItems = [];
+        origHideModal(e);
+    };
+
     // ── Expose for inline onclick ──
     window.sendMessage = sendMessage;
 

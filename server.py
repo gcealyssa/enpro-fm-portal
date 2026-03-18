@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 from config import settings
 from data_loader import load_static, load_inventory, load_chemicals, merge_data
-from search import search_products, lookup_part
+from search import search_products, lookup_part, suggest_parts
 from router import handle_message
 from azure_client import health_check as azure_health_check, close_client
 from governance import run_pre_checks
@@ -144,6 +144,10 @@ class ChemicalRequest(BaseModel):
     chemical: str
 
 
+class SuggestRequest(BaseModel):
+    query: str
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -241,6 +245,16 @@ async def chemical_check(req: ChemicalRequest):
             status_code=500,
             content={"error": "Chemical check failed.", "detail": str(e)},
         )
+
+
+@app.get("/api/suggest")
+async def suggest(q: str = ""):
+    """Typeahead suggestions for part number lookup. Pandas only, $0 cost."""
+    if not state.data_loaded or len(q) < 2:
+        return {"suggestions": []}
+
+    suggestions = suggest_parts(state.df, q, max_results=10)
+    return {"suggestions": suggestions}
 
 
 @app.get("/widget.js")

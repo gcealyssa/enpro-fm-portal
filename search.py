@@ -305,3 +305,65 @@ def lookup_part(df: pd.DataFrame, part_number: str) -> Optional[dict]:
         if not match.empty:
             return format_product(match.iloc[0])
     return None
+
+
+def suggest_parts(df: pd.DataFrame, query: str, max_results: int = 10) -> list:
+    """
+    Fast typeahead suggestions. Returns list of dicts with Part_Number and Description.
+    Priority: starts-with first, then contains. Always returns up to max_results.
+    """
+    if df.empty or not query or len(query) < 2:
+        return []
+
+    query_lower = query.lower().strip()
+    norm_query = _normalize(query)
+    results = []
+    seen = set()
+
+    # Phase 1: Part_Number starts with (highest priority)
+    for col in ["Part_Number", "Supplier_Code", "Alt_Code"]:
+        if col not in df.columns:
+            continue
+        col_norm = df[col].apply(_normalize)
+        matches = df[col_norm.str.startswith(norm_query, na=False)]
+        for _, row in matches.iterrows():
+            pn = str(row.get("Part_Number", ""))
+            if pn and pn not in seen:
+                seen.add(pn)
+                desc = str(row.get("Description", ""))
+                mfr = str(row.get("Final_Manufacturer", row.get("Manufacturer", "")))
+                results.append({"Part_Number": pn, "Description": desc, "Manufacturer": mfr})
+                if len(results) >= max_results:
+                    return results
+
+    # Phase 2: Part_Number contains (lower priority)
+    for col in ["Part_Number", "Supplier_Code", "Alt_Code"]:
+        if col not in df.columns:
+            continue
+        col_norm = df[col].apply(_normalize)
+        matches = df[col_norm.str.contains(norm_query, na=False)]
+        for _, row in matches.iterrows():
+            pn = str(row.get("Part_Number", ""))
+            if pn and pn not in seen:
+                seen.add(pn)
+                desc = str(row.get("Description", ""))
+                mfr = str(row.get("Final_Manufacturer", row.get("Manufacturer", "")))
+                results.append({"Part_Number": pn, "Description": desc, "Manufacturer": mfr})
+                if len(results) >= max_results:
+                    return results
+
+    # Phase 3: Description contains
+    if "Description" in df.columns and len(results) < max_results:
+        desc_lower = df["Description"].astype(str).str.lower()
+        matches = df[desc_lower.str.contains(re.escape(query_lower), na=False)]
+        for _, row in matches.iterrows():
+            pn = str(row.get("Part_Number", ""))
+            if pn and pn not in seen:
+                seen.add(pn)
+                desc = str(row.get("Description", ""))
+                mfr = str(row.get("Final_Manufacturer", row.get("Manufacturer", "")))
+                results.append({"Part_Number": pn, "Description": desc, "Manufacturer": mfr})
+                if len(results) >= max_results:
+                    return results
+
+    return results
