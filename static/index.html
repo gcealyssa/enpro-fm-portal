@@ -31,6 +31,22 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            align-items: center;
+        }
+
+        /* Center container — 800px max on desktop, full on mobile */
+        .app-shell {
+            width: 100%;
+            max-width: 800px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.08);
+        }
+        @media (max-width: 800px) {
+            .app-shell { box-shadow: none; }
         }
 
         /* ── Header ── */
@@ -59,24 +75,23 @@
         /* ── Quick Actions Bar ── */
         .quick-actions {
             display: flex;
-            gap: 8px;
+            flex-wrap: wrap;
+            gap: 6px;
             padding: 10px 16px;
             background: white;
             border-bottom: 1px solid var(--border);
-            overflow-x: auto;
             flex-shrink: 0;
-            -webkit-overflow-scrolling: touch;
+            justify-content: center;
         }
-        .quick-actions::-webkit-scrollbar { display: none; }
         .qa-btn {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
+            gap: 4px;
+            padding: 6px 10px;
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 13px;
+            border-radius: 16px;
+            font-size: 12px;
             font-weight: 500;
             color: var(--navy);
             cursor: pointer;
@@ -624,6 +639,7 @@
     </style>
 </head>
 <body>
+<div class="app-shell">
 
 <!-- Header -->
 <div class="header">
@@ -699,6 +715,8 @@
         </svg>
     </button>
 </div>
+
+</div><!-- /app-shell -->
 
 <!-- Modal Overlay -->
 <div class="modal-overlay" id="modalOverlay" onclick="hideModal(event)">
