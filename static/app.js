@@ -553,48 +553,202 @@
         return html;
     };
 
-    // ── Follow-up buttons ──
+    // ── Contextual Action Panel (replaces simple follow-up buttons) ──
     function appendFollowUps(partNumber, customFollowUps) {
         if (customFollowUps) {
-            // Use custom follow-ups as-is
-            lastFollowUps = customFollowUps;
-            var labels = customFollowUps;
-        } else if (partNumber) {
-            // Contextual follow-ups for a specific part
-            lastFollowUps = [
-                'chemical compatibility for ' + partNumber,
-                'price ' + partNumber,
-                'compare ' + partNumber,
-                'manufacturer ' + partNumber,
-                'quote ready'
-            ];
-            var labels = [
-                'Chemical Check',
-                'Price',
-                'Compare',
-                'Manufacturer',
-                'Quote Ready'
-            ];
-        } else {
-            return; // No part and no custom — skip
+            // Custom follow-ups: render as simple buttons
+            var container = document.createElement('div');
+            container.className = 'followup-buttons';
+            container.style.maxWidth = '85%';
+            customFollowUps.forEach(function (fu, i) {
+                var btn = document.createElement('button');
+                btn.className = 'followup-btn';
+                btn.textContent = fu;
+                btn.onclick = function () { sendMessage(fu); };
+                container.appendChild(btn);
+            });
+            chatArea.appendChild(container);
+            scrollToBottom();
+            return;
         }
 
-        var container = document.createElement('div');
-        container.className = 'followup-buttons';
-        container.style.maxWidth = '85%';
+        if (!partNumber) return;
 
-        var followUpsCopy = lastFollowUps.slice();
-        labels.forEach(function (label, i) {
-            var btn = document.createElement('button');
-            btn.className = 'followup-btn';
-            btn.textContent = label;
-            btn.onclick = function () { sendMessage(followUpsCopy[i]); };
-            container.appendChild(btn);
-        });
+        // Update quote tracker
+        updateQuoteTracker('part', partNumber);
 
-        chatArea.appendChild(container);
+        // Build contextual action panel
+        var panelId = 'actionPanel_' + Date.now();
+        var panel = document.createElement('div');
+        panel.className = 'msg bot';
+        panel.innerHTML = '<div class="action-panel" id="' + panelId + '">' +
+            '<div class="action-panel-header">Next Steps for ' + esc(partNumber) + '</div>' +
+            '<div class="action-grid">' +
+                '<div class="action-card" onclick="runAction(\'chemical\', \'' + esc(partNumber) + '\', this)">' +
+                    '<div class="action-icon">&#9879;</div>' +
+                    '<div class="action-label">Chemical Check</div>' +
+                    '<div class="action-desc">Check material compatibility</div>' +
+                '</div>' +
+                '<div class="action-card" onclick="runAction(\'price\', \'' + esc(partNumber) + '\', this)">' +
+                    '<div class="action-icon">&#128176;</div>' +
+                    '<div class="action-label">Price</div>' +
+                    '<div class="action-desc">Get current pricing</div>' +
+                '</div>' +
+                '<div class="action-card" onclick="showCompareForm(\'' + esc(partNumber) + '\', \'' + panelId + '\')">' +
+                    '<div class="action-icon">&#9878;</div>' +
+                    '<div class="action-label">Compare</div>' +
+                    '<div class="action-desc">Side-by-side comparison</div>' +
+                '</div>' +
+                '<div class="action-card" onclick="runAction(\'manufacturer\', \'' + esc(partNumber) + '\', this)">' +
+                    '<div class="action-icon">&#127981;</div>' +
+                    '<div class="action-label">Manufacturer</div>' +
+                    '<div class="action-desc">More from this brand</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+
+        chatArea.appendChild(panel);
         scrollToBottom();
     }
+
+    // Run a simple action (no additional input needed)
+    window.runAction = function (action, partNumber, el) {
+        if (el) {
+            el.classList.add('action-done');
+            el.style.pointerEvents = 'none';
+        }
+        // Track in quote progress
+        updateQuoteTracker(action, partNumber);
+
+        switch (action) {
+            case 'chemical':
+                sendMessage('chemical compatibility for ' + partNumber);
+                break;
+            case 'price':
+                sendMessage('price ' + partNumber);
+                break;
+            case 'manufacturer':
+                sendMessage('manufacturer ' + partNumber);
+                break;
+        }
+    };
+
+    // Show inline compare form
+    window.showCompareForm = function (partNumber, panelId) {
+        var panel = document.getElementById(panelId);
+        if (!panel) return;
+
+        // Check if form already exists
+        if (panel.querySelector('.compare-form')) return;
+
+        var form = document.createElement('div');
+        form.className = 'compare-form';
+        form.innerHTML = '<div class="compare-form-inner">' +
+            '<label>Compare <strong>' + esc(partNumber) + '</strong> with:</label>' +
+            '<div style="display:flex; gap:8px; margin-top:6px;">' +
+                '<input type="text" class="compare-input" id="compareInput_' + panelId + '" placeholder="Enter part number..." style="flex:1; padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px;">' +
+                '<button class="compare-go-btn" onclick="runCompare(\'' + esc(partNumber) + '\', \'' + panelId + '\')">Compare</button>' +
+            '</div>' +
+        '</div>';
+        panel.appendChild(form);
+
+        var input = document.getElementById('compareInput_' + panelId);
+        input.focus();
+        input.onkeydown = function (e) {
+            if (e.key === 'Enter') {
+                runCompare(partNumber, panelId);
+            }
+        };
+        scrollToBottom();
+    };
+
+    // Execute the compare
+    window.runCompare = function (partNumber, panelId) {
+        var input = document.getElementById('compareInput_' + panelId);
+        if (!input || !input.value.trim()) return;
+        var compareTo = input.value.trim();
+        updateQuoteTracker('compare', partNumber);
+        sendMessage('compare ' + partNumber + ' vs ' + compareTo);
+    };
+
+    // ── Quote Readiness Tracker ──
+    var quoteState = {
+        part: null,
+        price: false,
+        chemical: false,
+        compare: false,
+        manufacturer: false
+    };
+
+    function updateQuoteTracker(action, partNumber) {
+        if (action === 'part') {
+            quoteState.part = partNumber;
+            quoteState.price = false;
+            quoteState.chemical = false;
+            quoteState.compare = false;
+            quoteState.manufacturer = false;
+        } else {
+            quoteState[action] = true;
+        }
+        renderQuoteTracker();
+    }
+
+    function renderQuoteTracker() {
+        if (!quoteState.part) {
+            var existing = document.getElementById('quoteTracker');
+            if (existing) existing.remove();
+            return;
+        }
+
+        var tracker = document.getElementById('quoteTracker');
+        if (!tracker) {
+            tracker = document.createElement('div');
+            tracker.id = 'quoteTracker';
+            tracker.className = 'quote-tracker';
+            // Insert before the input area
+            var inputArea = document.querySelector('.input-area');
+            inputArea.parentNode.insertBefore(tracker, inputArea);
+        }
+
+        var steps = [
+            { key: 'part', label: 'Part', done: !!quoteState.part },
+            { key: 'price', label: 'Price', done: quoteState.price },
+            { key: 'chemical', label: 'Chemical', done: quoteState.chemical },
+            { key: 'compare', label: 'Compare', done: quoteState.compare }
+        ];
+
+        var doneCount = steps.filter(function (s) { return s.done; }).length;
+        var isReady = doneCount >= 3; // Part + 2 more = quote ready
+
+        var html = '<div class="quote-tracker-inner">';
+        html += '<div class="quote-tracker-part">' + esc(quoteState.part) + '</div>';
+        html += '<div class="quote-tracker-steps">';
+        steps.forEach(function (step) {
+            html += '<div class="qt-step ' + (step.done ? 'done' : '') + '">';
+            html += '<span class="qt-check">' + (step.done ? '&#10003;' : '&#9675;') + '</span>';
+            html += '<span class="qt-label">' + step.label + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+
+        if (isReady) {
+            html += '<button class="qt-ready-btn" onclick="sendMessage(\'quote ready for ' + esc(quoteState.part) + '\')">QUOTE READY</button>';
+        } else {
+            html += '<div class="qt-progress">' + doneCount + '/3 steps</div>';
+        }
+
+        html += '</div>';
+        tracker.innerHTML = html;
+    }
+
+    // Reset quote tracker on new chat
+    var origNewChat = window.newChat;
+    window.newChat = function () {
+        quoteState = { part: null, price: false, chemical: false, compare: false, manufacturer: false };
+        var tracker = document.getElementById('quoteTracker');
+        if (tracker) tracker.remove();
+        origNewChat();
+    };
 
     // ── Numbered options ──
     function appendNumberedOptions(options) {
