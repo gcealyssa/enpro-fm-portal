@@ -148,6 +148,12 @@ class SuggestRequest(BaseModel):
     query: str
 
 
+class ReportRequest(BaseModel):
+    part_number: str
+    reason: str = ""
+    session_id: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -354,6 +360,52 @@ async def chemicals_list():
     # Remove empty strings
     chemicals = [c for c in chemicals if c and c != ""]
     return {"chemicals": chemicals}
+
+
+@app.post("/api/report")
+async def report_product(req: ReportRequest):
+    """Flag a product card for Peter's review. Saves to persistent log."""
+    import os
+    from datetime import datetime
+
+    report = {
+        "part_number": req.part_number,
+        "reason": req.reason,
+        "session_id": req.session_id,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+    # Append to reports file
+    reports_file = os.path.join("data", "reports.json")
+    os.makedirs("data", exist_ok=True)
+
+    try:
+        import json
+        existing = []
+        if os.path.exists(reports_file):
+            with open(reports_file, "r") as f:
+                existing = json.load(f)
+        existing.append(report)
+        with open(reports_file, "w") as f:
+            json.dump(existing, f, indent=2)
+        logger.info(f"Report filed: {req.part_number}")
+        return {"status": "reported", "report": report}
+    except Exception as e:
+        logger.error(f"Report save failed: {e}")
+        return {"status": "error", "detail": str(e)}
+
+
+@app.get("/api/reports")
+async def get_reports():
+    """Get all filed reports (admin view)."""
+    import os
+    import json
+    reports_file = os.path.join("data", "reports.json")
+    if os.path.exists(reports_file):
+        with open(reports_file, "r") as f:
+            reports = json.load(f)
+        return {"reports": reports, "count": len(reports)}
+    return {"reports": [], "count": 0}
 
 
 @app.get("/widget.js")

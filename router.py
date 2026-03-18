@@ -325,18 +325,19 @@ def _get_demo_instructions(intent: str) -> str:
     """Return demo mode instructions for GPT context."""
     if intent == "demo":
         return (
-            "[DEMO MODE] Execute a full walkthrough using REAL products from the database.\n"
-            "Show these capabilities in order:\n"
-            "1. Part Number Lookup (use a real part from the data)\n"
-            "2. Supplier Code Search\n"
-            "3. Manufacturer Search\n"
-            "4. Application Matching (brewery or amine example)\n"
-            "5. Chemical Compatibility (sulfuric acid)\n"
-            "6. Escalation Trigger (500F example)\n"
-            "7. Meeting Prep (pregame)\n"
-            "8. Quote Readiness\n"
-            "Use NUMBERED LISTS ONLY. Label all data: [V25 FILTERS], [NOT IN DATA], [NO PRICE].\n"
-            "17,040 filters. John's 30-year expertise. Zero invented data."
+            "[DEMO MODE] Execute a full walkthrough using these SPECIFIC parts from the database.\n"
+            "Do NOT search for 'demo' — use these real part numbers:\n\n"
+            "1. PART LOOKUP: Search for 'CLR130' (Pall/PowerFlow filter element)\n"
+            "2. MANUFACTURER: Search for 'Graver' (show count + sample products)\n"
+            "3. DEPTH SHEETS: Search for 'Filtrox' (brewery/F&B depth sheets)\n"
+            "4. APPLICATION: Brewery application — cite KB Section 8.2\n"
+            "5. CHEMICAL: Sulfuric acid — show A/B/C/D ratings for all materials\n"
+            "6. ESCALATION: Show what happens at 500F — escalation triggers\n"
+            "7. PREGAME: Brewery meeting prep — 3-5 line summary\n\n"
+            "Run through ALL 7 steps in order. Use NUMBERED LISTS ONLY.\n"
+            "Show real prices, real stock, real specs from the database.\n"
+            "End with: '17,040+ filters. John's 30-year expertise. Zero invented data.'\n"
+            "Label all data: source from V25 Filters database."
         )
     elif intent == "demo_guided":
         return (

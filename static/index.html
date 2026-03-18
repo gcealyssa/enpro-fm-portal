@@ -936,6 +936,57 @@
         }
         /* Push app-shell up so footer doesn't overlap input */
         .app-shell { padding-bottom: 28px; }
+
+        /* ── Dark Mode ── */
+        body.dark-mode {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --text: #e0e0e0;
+            --text-light: #a0a0b0;
+            --border: #2a2a4a;
+            --navy: #0a1628;
+            --accent: #4d8bff;
+            --shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        body.dark-mode .app-shell { background: var(--navy); }
+        body.dark-mode .header { background: #0a0a1a; }
+        body.dark-mode .quick-actions { background: var(--navy); }
+        body.dark-mode .input-area { background: var(--navy); }
+        body.dark-mode .input-area textarea { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+        body.dark-mode .qa-btn { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+        body.dark-mode .qa-btn:hover { background: var(--accent); color: white; }
+        body.dark-mode .product-card-header { background: #0a1628; }
+        body.dark-mode .product-card-body { background: var(--card-bg); }
+        body.dark-mode .product-field { border-color: var(--border); }
+        body.dark-mode .product-footer { background: #0a1628; color: var(--text-light); }
+        body.dark-mode .msg.user .msg-bubble { background: var(--accent); }
+        body.dark-mode .msg.bot .msg-bubble { background: var(--card-bg); color: var(--text); }
+        body.dark-mode .modal { background: var(--card-bg); }
+        body.dark-mode .modal-body input, body.dark-mode .modal-body select { background: var(--navy); color: var(--text); border-color: var(--border); }
+        body.dark-mode .modal-footer { border-color: var(--border); }
+        body.dark-mode .modal-btn.secondary { background: var(--navy); color: var(--text); border-color: var(--border); }
+        body.dark-mode .action-panel { background: var(--card-bg); }
+        body.dark-mode .action-card { background: var(--card-bg); }
+        body.dark-mode .action-card:hover { background: var(--navy); }
+        body.dark-mode .action-grid { background: var(--border); }
+        body.dark-mode .quote-tracker { background: var(--card-bg); border-color: var(--accent); }
+        body.dark-mode .admin-footer { background: #0a0a1a; }
+        body.dark-mode .welcome { color: var(--text-light); }
+        body.dark-mode .welcome h2 { color: var(--text); }
+        body.dark-mode .suggest-dropdown { background: var(--card-bg); border-color: var(--border); }
+        body.dark-mode .suggest-item:hover { background: var(--navy); }
+        body.dark-mode .consol-row:hover { background: var(--navy); }
+        body.dark-mode .card-actions { border-color: var(--border); }
+        body.dark-mode .card-action-btn { background: var(--navy); color: var(--text); border-color: var(--border); }
+        body.dark-mode .card-action-btn:hover { background: var(--accent); }
+        body.dark-mode .search-tag { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+        body.dark-mode .search-tag:hover { background: var(--accent); color: white; }
+        body.dark-mode .followup-btn { background: var(--card-bg); color: var(--accent); border-color: var(--accent); }
+        body.dark-mode .show-more-btn { background: var(--accent); }
+        body.dark-mode .product-price { background: var(--navy); }
+        body.dark-mode .stock-section { border-color: var(--border); }
+        body.dark-mode .compare-form { background: var(--navy); border-color: var(--border); }
+        body.dark-mode .compare-form input { background: var(--card-bg); color: var(--text); border-color: var(--border); }
     </style>
 </head>
 <body>
@@ -948,6 +999,7 @@
         <div class="header-title">Filtration Mastermind</div>
         <div class="header-sub">EnPro Inc. Product Intelligence</div>
     </div>
+    <button onclick="toggleDarkMode()" id="darkModeBtn" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 10px; border-radius:6px; font-size:15px; cursor:pointer;" title="Toggle dark mode">&#9790;</button>
     <button onclick="newChat()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap;">New Chat</button>
 </div>
 

@@ -814,6 +814,11 @@
     // ── Markdown-lite formatting ──
     function formatMarkdown(text) {
         if (!text) return '';
+        // Strip internal data source labels before display
+        text = text.replace(/\[V25 FILTERS\]/g, '');
+        text = text.replace(/\[NOT IN DATA\]/g, '');
+        text = text.replace(/\[NO PRICE\]/g, '');
+        text = text.replace(/\s{2,}/g, ' ');
         var s = esc(text);
         // Bold
         s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -1274,6 +1279,20 @@
 
         console.log('REPORT:', reportData);
     };
+
+    // ── Dark Mode Toggle ──
+    window.toggleDarkMode = function () {
+        document.body.classList.toggle('dark-mode');
+        var isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('enpro_dark_mode', isDark ? 'true' : 'false');
+        document.getElementById('darkModeBtn').textContent = isDark ? '\u2600' : '\u263E';
+    };
+
+    // Restore dark mode preference
+    if (localStorage.getItem('enpro_dark_mode') === 'true') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('darkModeBtn').textContent = '\u2600';
+    }
 
     // ── Expose for inline onclick ──
     window.sendMessage = sendMessage;
