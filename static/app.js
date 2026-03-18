@@ -409,11 +409,11 @@
 
         html += '</div>'; // body
 
-        // Footer
+        // Footer — click to copy, no email app
         html += '<div class="product-footer">';
-        html += 'For additional information: <strong>EnPro Inc</strong> &mdash; ';
-        html += '<a href="mailto:service@enproinc.com" style="color: var(--accent);">service@enproinc.com</a>';
-        html += ' | <a href="tel:18003232416" style="color: var(--accent);">1 (800) 323-2416</a>';
+        html += '<strong>EnPro Inc</strong> &mdash; ';
+        html += '<span class="copy-link" onclick="copyToClipboard(\'service@enproinc.com\', this)">service@enproinc.com</span>';
+        html += ' | <span class="copy-link" onclick="copyToClipboard(\'1 (800) 323-2416\', this)">1 (800) 323-2416</span>';
         html += '</div>';
 
         html += '</div>';
@@ -894,6 +894,31 @@
         suggestSelectedIndex = -1;
         suggestItems = [];
         origHideModal(e);
+    };
+
+    // ── Copy to clipboard (no email app) ──
+    window.copyToClipboard = function (text, el) {
+        navigator.clipboard.writeText(text).then(function () {
+            // Show toast
+            var toast = document.createElement('div');
+            toast.className = 'copy-toast';
+            toast.textContent = 'Copied: ' + text;
+            document.body.appendChild(toast);
+            setTimeout(function () { toast.remove(); }, 2000);
+        }).catch(function () {
+            // Fallback for older browsers
+            var input = document.createElement('input');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            var toast = document.createElement('div');
+            toast.className = 'copy-toast';
+            toast.textContent = 'Copied: ' + text;
+            document.body.appendChild(toast);
+            setTimeout(function () { toast.remove(); }, 2000);
+        });
     };
 
     // ── Expose for inline onclick ──
