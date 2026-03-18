@@ -715,7 +715,7 @@
 
         switch (action) {
             case 'chemical':
-                sendMessage('chemical compatibility for ' + partNumber);
+                sendMessage('chemical compatibility check for part ' + partNumber);
                 break;
             case 'similar':
                 sendMessage('similar to ' + partNumber);

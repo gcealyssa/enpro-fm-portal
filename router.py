@@ -89,7 +89,7 @@ If ALL zero = "Out of Stock."
 
 ## 15 HARD RULES
 
-1. NEVER INVENT DATA — Every part number, price, spec must come from search results. If 2 results exist, show 2. No padding.
+1. NEVER INVENT DATA — Every part number, price, spec, micron rating, temperature, PSI, flow rate, media type, and manufacturer MUST come from the [RELEVANT PRODUCTS FROM CATALOG] data provided. If a spec field is missing from the data, say "Not specified in catalog." If 2 results exist, show 2. No padding. Do NOT guess, estimate, or round specs.
 2. PRICE HANDLING — Price = 0 or blank = "[NO PRICE]. Contact EnPro for pricing." Never show $0.
 3. ALWAYS SEARCH FIRST — Maximum ONE clarifying question. Never ask two in a row. Search > Ask.
 4. SHOW REAL NUMBERS — Use actual pricing. Example: $52. Never "approximate."
@@ -364,6 +364,26 @@ def _get_demo_instructions(intent: str) -> str:
 
 async def classify_intent(message: str) -> str:
     """Classify user message into one of the defined intents via gpt-4.1-mini."""
+    msg_lower = message.lower().strip()
+
+    # Fast-path overrides — avoid misrouting by gpt-4.1-mini
+    if msg_lower.startswith("chemical ") or "chemical compatibility" in msg_lower:
+        return "chemical"
+    if msg_lower.startswith("compare ") or " vs " in msg_lower:
+        return "compare"
+    if msg_lower.startswith("manufacturer "):
+        return "manufacturer"
+    if msg_lower.startswith("supplier "):
+        return "supplier"
+    if msg_lower.startswith("price "):
+        return "price"
+    if msg_lower.startswith("pregame "):
+        return "pregame"
+    if msg_lower in ("help", "commands"):
+        return "help"
+    if msg_lower in ("reset", "start over", "new chat"):
+        return "reset"
+
     try:
         intent = await route_message(ROUTER_SYSTEM_PROMPT, message)
         intent = intent.lower().strip().replace('"', "").replace("'", "")
@@ -757,6 +777,17 @@ async def _handle_gpt(
         products_context = json.dumps(search_result["results"], indent=2, default=str)
         context_parts.append(f"[RELEVANT PRODUCTS FROM CATALOG]:\n{products_context}")
 
+    # Anti-hallucination guardrail — force GPT to only use provided data
+    context_parts.append(
+        "[CRITICAL DATA INTEGRITY RULE]\n"
+        "You MUST ONLY cite specs, part numbers, prices, stock levels, and manufacturers "
+        "that appear in the [RELEVANT PRODUCTS FROM CATALOG] section above.\n"
+        "If a spec (micron, temp, PSI, flow rate, media, price) is NOT in the catalog data provided, "
+        "say 'Not specified in catalog' — do NOT guess or invent values.\n"
+        "If no products were found in the catalog, say so. Do NOT fabricate part numbers.\n"
+        "NEVER round, estimate, or approximate specs. Use exact values from the data or say 'Contact EnPro.'"
+    )
+
     # Build messages
     messages = []
     if history:
@@ -776,6 +807,9 @@ async def _handle_gpt(
         if not post_check["valid"]:
             logger.warning(f"Post-check issues: {post_check['issues']}")
             response = sanitize_response(response)
+
+        # Anti-hallucination: validate part numbers in response against catalog
+        response = _validate_response_parts(response, search_result.get("results", []), df)
 
         return {
             "response": response,
@@ -814,6 +848,68 @@ def _search_chemical_crosswalk(message: str, chemicals_df: pd.DataFrame) -> Opti
     if results:
         return json.dumps(results, indent=2, default=str)
     return None
+
+
+# ---------------------------------------------------------------------------
+# Anti-hallucination validation
+# ---------------------------------------------------------------------------
+
+def _validate_response_parts(response: str, provided_products: list, df: pd.DataFrame) -> str:
+    """
+    Validate that part numbers mentioned in GPT response actually exist in the catalog.
+    If GPT invented a part number, flag it in the response.
+    """
+    import re as _re
+
+    if not response or df.empty:
+        return response
+
+    # Collect known part numbers from provided context
+    known_pns = set()
+    for p in provided_products:
+        pn = p.get("Part_Number", "")
+        if pn:
+            known_pns.add(pn.upper().strip())
+
+    # Find part-number-like patterns in GPT response (alphanumeric with dashes/slashes)
+    # Pattern: 2+ chars with mix of letters+digits, may have dashes/slashes
+    pn_pattern = _re.compile(r'\b([A-Z]{1,5}[\d][\w\-/]{2,30}|[\d]{4,10})\b', _re.IGNORECASE)
+    mentioned_pns = set(pn_pattern.findall(response))
+
+    if not mentioned_pns:
+        return response
+
+    # Check each mentioned part number against the catalog
+    flagged = []
+    for mentioned in mentioned_pns:
+        mentioned_upper = mentioned.upper().strip()
+        # Skip if it's in the provided context
+        if mentioned_upper in known_pns:
+            continue
+        # Skip short matches or common words that look like part numbers
+        if len(mentioned) < 4:
+            continue
+        # Skip common non-part patterns (dates, versions, etc.)
+        if _re.match(r'^V\d+$|^\d{4}$|^S\d+$|^KB\s?\d', mentioned, _re.IGNORECASE):
+            continue
+        # Check against full DataFrame
+        from search import lookup_part
+        found = lookup_part(df, mentioned)
+        if not found:
+            # This part number doesn't exist — GPT may have hallucinated it
+            flagged.append(mentioned)
+            logger.warning(f"HALLUCINATION CHECK: Part '{mentioned}' in GPT response not found in catalog")
+
+    # If hallucinated parts found, add a disclaimer
+    if flagged and len(flagged) <= 5:
+        disclaimer = (
+            "\n\n**Note:** Some part numbers referenced above could not be verified in the current catalog. "
+            "Always confirm part numbers with EnPro before ordering. "
+            "Contact: service@enproinc.com | 1 (800) 323-2416"
+        )
+        response += disclaimer
+
+    return response
 
 
 # ---------------------------------------------------------------------------
