@@ -391,6 +391,18 @@
         }
         .input-area textarea:focus { border-color: var(--accent); }
         .input-area textarea::placeholder { color: #aaa; }
+        .input-side-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--bg);
+            color: var(--text-light);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
         .mic-btn {
             width: 42px; height: 42px;
             background: var(--bg);
@@ -1953,44 +1965,46 @@
         <div class="header-sub">EnPro Inc. Product Intelligence</div>
     </div>
     <button onclick="toggleDarkMode()" id="darkModeBtn" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 10px; border-radius:6px; font-size:15px; cursor:pointer;" title="Toggle dark mode">&#9790;</button>
+    <button onclick="sendMessage('help')" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 10px; border-radius:6px; font-size:13px; cursor:pointer;" title="Help">?</button>
     <button onclick="newChat()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; padding:6px 14px; border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap;">New Chat</button>
 </div>
 
 <!-- Quick Actions -->
 <div class="quick-actions">
-    <button class="qa-btn" onclick="showModal('lookup')">
-        <span class="qa-icon">&#128269;</span> Lookup
-    </button>
-    <button class="qa-btn" onclick="showModal('chemical')">
-        <span class="qa-icon">&#9879;</span> Chemical
-    </button>
-    <button class="qa-btn" onclick="showModal('search')">
-        <span class="qa-icon">&#128196;</span> Search
-    </button>
-    <button class="qa-btn" onclick="showModal('compare')">
-        <span class="qa-icon">&#9878;</span> Compare
-    </button>
-    <button class="qa-btn" onclick="showModal('manufacturer')">
-        <span class="qa-icon">&#127981;</span> Manufacturer
-    </button>
-    <button class="qa-btn" onclick="showModal('product_type')">
-        <span class="qa-icon">&#128220;</span> Product Type
-    </button>
-    <button class="qa-btn" onclick="showModal('industry')">
-        <span class="qa-icon">&#127981;</span> Industry
-    </button>
-    <button class="qa-btn" onclick="openPregamePicker()">
-        <span class="qa-icon">&#127919;</span> Pregame
-    </button>
-    <button class="qa-btn" onclick="startSimulate()">
-        <span class="qa-icon">&#9654;</span> Watch Demo
-    </button>
-    <button class="qa-btn" onclick="sendMessage('help')">
-        <span class="qa-icon">&#10067;</span> Help
-    </button>
-    <button class="qa-btn" onclick="openQuoteModal()">
-        <span class="qa-icon">&#128221;</span> Build Quote
-    </button>
+    <div class="qa-row" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%;">
+        <!-- Row 1: Find Products -->
+        <button class="qa-btn" onclick="showModal('search')">
+            <span class="qa-icon">&#128196;</span> Search
+        </button>
+        <button class="qa-btn" onclick="showModal('lookup')">
+            <span class="qa-icon">&#128269;</span> Lookup
+        </button>
+        <button class="qa-btn" onclick="showModal('manufacturer')">
+            <span class="qa-icon">&#127981;</span> Manufacturer
+        </button>
+        <button class="qa-btn" onclick="showModal('product_type')">
+            <span class="qa-icon">&#128220;</span> Product Type
+        </button>
+        <button class="qa-btn" onclick="showModal('industry')">
+            <span class="qa-icon">&#127981;</span> Industry
+        </button>
+        <button class="qa-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Coming Soon">
+            <span class="qa-icon">&#128221;</span> Debrief
+        </button>
+    </div>
+    <div class="qa-divider" style="width:100%; height:1px; background:var(--border); margin:4px 0;"></div>
+    <div class="qa-row" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%;">
+        <!-- Row 2: Take Action -->
+        <button class="qa-btn" onclick="showModal('compare')">
+            <span class="qa-icon">&#9878;</span> Compare
+        </button>
+        <button class="qa-btn" onclick="showModal('chemical')">
+            <span class="qa-icon">&#9879;</span> Chemical
+        </button>
+        <button class="qa-btn" onclick="openQuoteModal()">
+            <span class="qa-icon">&#128221;</span> Build Quote
+        </button>
+    </div>
     <button class="qa-exit-flow" id="exitFlowBtn" onclick="exitFlow()">&#10005; Back</button>
 </div>
 
@@ -2047,6 +2061,15 @@
 
 <!-- Input -->
 <div class="input-area">
+    <button class="input-side-btn" disabled title="Import Email — Coming Soon" style="opacity:0.35; cursor:not-allowed;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+    </button>
+    <button class="input-side-btn" disabled title="Sync Calendar — Coming Soon" style="opacity:0.35; cursor:not-allowed;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </button>
+    <button class="input-side-btn" disabled title="Teams Agenda — Coming Soon" style="opacity:0.35; cursor:not-allowed;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </button>
     <textarea id="userInput" rows="1" placeholder="Ask about a part, chemical, or product..."
         onkeydown="handleKeyDown(event)" oninput="autoGrow(this)"></textarea>
     <button class="ask-john-btn" id="askJohnBtn" onclick="askJohn()" title="Ask John — Coming Soon" disabled style="opacity:0.4; cursor:not-allowed;">

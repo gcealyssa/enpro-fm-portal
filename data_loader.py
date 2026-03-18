@@ -175,4 +175,18 @@ def _apply_display_mappings(df: pd.DataFrame) -> pd.DataFrame:
         df["Product_Type_Display"] = df["Product_Type"].map(pt_map).fillna(df["Product_Type"])
         logger.info(f"Product type display mapped: {len(pt_map)} categories")
 
+    # Flag filtration products
+    if "Has_V21_Specs" in df.columns:
+        df["Is_Filtration"] = df["Has_V21_Specs"].astype(str).str.upper().isin(["Y", "YES", "TRUE", "1"])
+        filt_count = df["Is_Filtration"].sum()
+        logger.info(f"Filtration products flagged: {filt_count}/{len(df)}")
+    else:
+        # Fallback: check if Micron or Media has data
+        has_specs = (
+            (df.get("Micron", pd.Series(dtype=float)).fillna(0).astype(float) > 0) |
+            (df.get("Media", pd.Series(dtype=str)).fillna("").astype(str).str.strip() != "")
+        )
+        df["Is_Filtration"] = has_specs
+        logger.info(f"Filtration products (spec-based): {has_specs.sum()}/{len(df)}")
+
     return df
