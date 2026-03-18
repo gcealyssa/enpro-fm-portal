@@ -137,12 +137,24 @@ def search_products(
     }
 
 
+_DESCRIPTION_WORDS = {
+    "micron", "filter", "element", "cartridge", "bag", "housing",
+    "membrane", "pleated", "depth", "sheet", "media", "steel",
+    "stainless", "polypropylene", "polyester", "nylon", "ptfe",
+    "glass", "carbon", "inch", "psi", "gpm", "temp", "flow",
+    "rate", "pressure", "temperature", "compatible", "replacement",
+}
+
+
 def _looks_like_part_number(query: str) -> bool:
-    """Heuristic: part numbers contain digits mixed with letters/dashes."""
+    """Heuristic: part numbers contain digits mixed with letters/dashes.
+    Excludes queries with common description/spec words."""
+    words = query.lower().split()
+    if any(w in _DESCRIPTION_WORDS for w in words):
+        return False
     has_digit = any(c.isdigit() for c in query)
     has_alpha = any(c.isalpha() for c in query)
-    word_count = len(query.split())
-    return has_digit and (has_alpha or "-" in query) and word_count <= 2
+    return has_digit and (has_alpha or "-" in query) and len(words) <= 2
 
 
 def _search_exact(df: pd.DataFrame, norm_query: str) -> pd.DataFrame:
