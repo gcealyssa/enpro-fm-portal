@@ -578,17 +578,17 @@
                 '<div class="action-card" onclick="runAction(\'chemical\', \'' + esc(partNumber) + '\', this)">' +
                     '<div class="action-icon">&#9879;</div>' +
                     '<div class="action-label">Chemical Check</div>' +
-                    '<div class="action-desc">Check material compatibility</div>' +
-                '</div>' +
-                '<div class="action-card" onclick="runAction(\'price\', \'' + esc(partNumber) + '\', this)">' +
-                    '<div class="action-icon">&#128176;</div>' +
-                    '<div class="action-label">Price</div>' +
-                    '<div class="action-desc">Get current pricing</div>' +
+                    '<div class="action-desc">Material compatibility</div>' +
                 '</div>' +
                 '<div class="action-card" onclick="showCompareForm(\'' + esc(partNumber) + '\', \'' + panelId + '\')">' +
                     '<div class="action-icon">&#9878;</div>' +
                     '<div class="action-label">Compare</div>' +
-                    '<div class="action-desc">Side-by-side comparison</div>' +
+                    '<div class="action-desc">Side-by-side with another part</div>' +
+                '</div>' +
+                '<div class="action-card" onclick="runAction(\'similar\', \'' + esc(partNumber) + '\', this)">' +
+                    '<div class="action-icon">&#128260;</div>' +
+                    '<div class="action-label">Similar Parts</div>' +
+                    '<div class="action-desc">Find alternatives</div>' +
                 '</div>' +
                 '<div class="action-card" onclick="runAction(\'manufacturer\', \'' + esc(partNumber) + '\', this)">' +
                     '<div class="action-icon">&#127981;</div>' +
@@ -615,8 +615,8 @@
             case 'chemical':
                 sendMessage('chemical compatibility for ' + partNumber);
                 break;
-            case 'price':
-                sendMessage('price ' + partNumber);
+            case 'similar':
+                sendMessage('similar to ' + partNumber);
                 break;
             case 'manufacturer':
                 sendMessage('manufacturer ' + partNumber);
@@ -665,9 +665,9 @@
     // ── Quote Readiness Tracker ──
     var quoteState = {
         part: null,
-        price: false,
         chemical: false,
         compare: false,
+        similar: false,
         manufacturer: false
     };
 
@@ -703,9 +703,9 @@
 
         var steps = [
             { key: 'part', label: 'Part', done: !!quoteState.part },
-            { key: 'price', label: 'Price', done: quoteState.price },
             { key: 'chemical', label: 'Chemical', done: quoteState.chemical },
-            { key: 'compare', label: 'Compare', done: quoteState.compare }
+            { key: 'compare', label: 'Compare', done: quoteState.compare },
+            { key: 'similar', label: 'Alternatives', done: quoteState.similar }
         ];
 
         var doneCount = steps.filter(function (s) { return s.done; }).length;
@@ -736,7 +736,7 @@
     // Reset quote tracker on new chat
     var origNewChat = window.newChat;
     window.newChat = function () {
-        quoteState = { part: null, price: false, chemical: false, compare: false, manufacturer: false };
+        quoteState = { part: null, chemical: false, compare: false, similar: false, manufacturer: false };
         adminStats = { queries: 0, cost: 0, totalLatency: 0, errors: 0, reports: 0 };
         updateAdminFooter();
         var tracker = document.getElementById('quoteTracker');
