@@ -145,9 +145,12 @@
         }
     };
 
-    // Load products one at a time with a stagger delay for smooth cascading
+    // Load first 3 products, then show "Show More" button for the rest
     async function loadProductsStaggered(suggestions) {
-        for (var i = 0; i < suggestions.length; i++) {
+        var INITIAL_SHOW = 3;
+
+        // Show first 3 with stagger
+        for (var i = 0; i < Math.min(INITIAL_SHOW, suggestions.length); i++) {
             try {
                 var res = await fetch(API_BASE + '/api/lookup', {
                     method: 'POST',
@@ -159,12 +162,46 @@
                     appendCard(renderProductCard(data.product), true);
                 }
             } catch (err) {
-                console.error('Product fetch error for ' + suggestions[i].Part_Number + ':', err);
+                console.error('Product fetch error:', err);
             }
-            // Small delay between cards for smooth cascade effect
-            if (i < suggestions.length - 1) {
-                await new Promise(function (resolve) { setTimeout(resolve, 150); });
+            if (i < Math.min(INITIAL_SHOW, suggestions.length) - 1) {
+                await new Promise(function (resolve) { setTimeout(resolve, 400); });
             }
+        }
+
+        // If more results exist, show "Show More" button
+        if (suggestions.length > INITIAL_SHOW) {
+            var remaining = suggestions.slice(INITIAL_SHOW);
+            var moreBtn = document.createElement('div');
+            moreBtn.className = 'msg bot';
+            moreBtn.innerHTML = '<div class="show-more-bar">' +
+                '<button class="show-more-btn" id="showMoreBtn">' +
+                remaining.length + ' more results — Show More</button>' +
+                '</div>';
+            chatArea.appendChild(moreBtn);
+            scrollToBottom();
+
+            document.getElementById('showMoreBtn').onclick = async function () {
+                moreBtn.remove();
+                for (var j = 0; j < remaining.length; j++) {
+                    try {
+                        var res2 = await fetch(API_BASE + '/api/lookup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ part_number: remaining[j].Part_Number })
+                        });
+                        var data2 = await res2.json();
+                        if (data2.found && data2.product) {
+                            appendCard(renderProductCard(data2.product), true);
+                        }
+                    } catch (err2) {
+                        console.error('Product fetch error:', err2);
+                    }
+                    if (j < remaining.length - 1) {
+                        await new Promise(function (resolve) { setTimeout(resolve, 400); });
+                    }
+                }
+            };
         }
     }
 
@@ -226,14 +263,7 @@
         // Handle different response shapes
         if (data.products && Array.isArray(data.products) && data.products.length > 0) {
             if (data.text || data.response) appendMessage('bot', formatMarkdown(data.text || data.response));
-            for (var i = 0; i < data.products.length; i++) {
-                var p = data.products[i];
-                appendCard(renderProductCard(p), data.products.length > 1);
-                if (i === data.products.length - 1) appendFollowUps(p.Part_Number || p.part_number || '');
-                if (data.products.length > 1 && i < data.products.length - 1) {
-                    await new Promise(function (r) { setTimeout(r, 150); });
-                }
-            }
+            await renderProductsBatched(data.products);
         } else if (data.results && Array.isArray(data.results) && data.results.length > 0) {
             if (data.total_found !== undefined) {
                 var headerMsg = 'Found **' + data.total_found + '** products';
@@ -241,14 +271,7 @@
                 headerMsg += ' [V25 FILTERS]:';
                 appendMessage('bot', formatMarkdown(headerMsg));
             }
-            for (var j = 0; j < data.results.length; j++) {
-                var p2 = data.results[j];
-                appendCard(renderProductCard(p2), data.results.length > 1);
-                if (j === data.results.length - 1) appendFollowUps(p2.Part_Number || p2.part_number || '');
-                if (data.results.length > 1 && j < data.results.length - 1) {
-                    await new Promise(function (r) { setTimeout(r, 150); });
-                }
-            }
+            await renderProductsBatched(data.results);
         } else if (data.chemical) {
             appendCard(renderChemicalCard(data.chemical));
         } else if (data.table) {
@@ -310,6 +333,48 @@
         localStorage.setItem(SESSION_KEY, sessionId);
         scrollToBottom();
     };
+
+    // ── Render products: top 3 + Show More button ──
+    async function renderProductsBatched(products) {
+        var BATCH = 3;
+
+        // Show first 3
+        for (var i = 0; i < Math.min(BATCH, products.length); i++) {
+            appendCard(renderProductCard(products[i]), products.length > 1);
+            if (products.length > 1 && i < Math.min(BATCH, products.length) - 1) {
+                await new Promise(function (r) { setTimeout(r, 400); });
+            }
+        }
+
+        // Follow-ups on the last shown card
+        var lastShown = products[Math.min(BATCH, products.length) - 1];
+        appendFollowUps(lastShown.Part_Number || lastShown.part_number || '');
+
+        // Show More button if there are more
+        if (products.length > BATCH) {
+            var remaining = products.slice(BATCH);
+            var btnId = 'showMore_' + Date.now();
+            var moreDiv = document.createElement('div');
+            moreDiv.className = 'msg bot';
+            moreDiv.innerHTML = '<div class="show-more-bar">' +
+                '<button class="show-more-btn" id="' + btnId + '">' +
+                'Show ' + remaining.length + ' more results</button>' +
+                '</div>';
+            chatArea.appendChild(moreDiv);
+            scrollToBottom();
+
+            document.getElementById(btnId).onclick = async function () {
+                moreDiv.remove();
+                for (var j = 0; j < remaining.length; j++) {
+                    appendCard(renderProductCard(remaining[j]), true);
+                    if (j < remaining.length - 1) {
+                        await new Promise(function (r) { setTimeout(r, 400); });
+                    }
+                }
+                appendFollowUps(remaining[remaining.length - 1].Part_Number || '');
+            };
+        }
+    }
 
     // ── Render product card ──
     window.renderProductCard = function (p) {
