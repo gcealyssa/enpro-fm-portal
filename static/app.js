@@ -1229,20 +1229,28 @@
     // ── Markdown-lite formatting ──
     function formatMarkdown(text) {
         if (!text) return '';
-        // Strip internal data source labels before display
+        // Strip internal data source labels
         text = text.replace(/\[V25 FILTERS\]/g, '');
         text = text.replace(/\[NOT IN DATA\]/g, '');
         text = text.replace(/\[NO PRICE\]/g, '');
+        text = text.replace(/\[CRITICAL DATA INTEGRITY RULE\][\s\S]*?\[USER MESSAGE\]:/g, '');
+        // Clean up stray markdown artifacts
+        text = text.replace(/^\s*[-•–]\s*/gm, '');  // Strip leading dashes/bullets
+        text = text.replace(/^\s*#{1,3}\s+/gm, '');  // Strip heading markers
         text = text.replace(/\s{2,}/g, ' ');
         var s = esc(text);
         // Bold
         s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        // Italic
-        s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        // Strip remaining stray stars
+        s = s.replace(/\*/g, '');
         // Inline code
         s = s.replace(/`(.+?)`/g, '<code>$1</code>');
+        // Numbered lists — add proper spacing
+        s = s.replace(/(\d+)\.\s+/g, '<br>$1. ');
         // Line breaks
         s = s.replace(/\n/g, '<br>');
+        // Clean double breaks
+        s = s.replace(/(<br\s*\/?>){3,}/g, '<br><br>');
         return s;
     }
 
@@ -2677,35 +2685,41 @@
     }
 
     // ── Simulate Mode — In-App Live Demo ──
+    // Demo scenarios — grouped as FLOWS (3-4 chained commands per flow, no reset between)
     var SIM_SCENARIOS = [
-        { label: 'Part Lookup', query: '2004355', pause: 6000,
-          narration: 'Look up any part by number. See specs, stock, and pricing instantly.' },
-        { label: 'Another Part', query: 'CMBF1-30NN', pause: 6000,
-          narration: 'Every part in the P21 system — 72,000+ products searchable in real time.' },
-        { label: 'Chemical Compatibility', query: 'chemical compatibility of sulfuric acid', pause: 8000,
-          narration: 'Check material ratings for any chemical. A/B/C/D scale with recommendations.' },
-        { label: 'Another Chemical', query: 'chemical compatibility of acetone', pause: 8000,
-          narration: 'Instant compatibility checks — PTFE, Viton, EPDM, 316SS and more.' },
-        { label: 'Pre-Call Prep', query: 'pregame pharmaceutical', pause: 8000,
-          narration: 'Prepare for customer calls by industry. Key concerns, products, and opening questions.' },
-        { label: 'Brewery Prep', query: 'pregame brewery', pause: 8000,
-          narration: 'Industry-specific expertise — FDA compliance, 3-A sanitary, depth sheets.' },
-        { label: 'Product Search', query: 'search 10 micron filter element', pause: 6000,
-          narration: 'Search by specs — micron, material, product type. In-stock results with pricing.' },
-        { label: 'Material Search', query: 'search polypropylene cartridge', pause: 6000,
-          narration: 'Search by material — find every PP, PTFE, glass fiber, or stainless product.' },
-        { label: 'Compare Products', query: 'compare 2004355 vs CMBF1-30NN', pause: 8000,
-          narration: 'Side-by-side comparison of any two products. Specs, price, availability.' },
-        { label: 'Manufacturer Browse', query: 'manufacturer PPC', pause: 6000,
-          narration: 'Browse by manufacturer. See their full catalog with stock levels.' },
-        { label: 'Another Manufacturer', query: 'manufacturer Graver', pause: 6000,
-          narration: '1,200+ manufacturers in the system. Every brand your reps sell.' },
-        { label: 'Refinery Scenario', query: 'I need a filter for hydraulic oil at 10 micron 200F', pause: 10000,
-          narration: 'Describe what you need in plain English. FM finds compatible products automatically.' },
-        { label: 'Ask the Expert', query: 'what filter do I need for glycol dehydration in a gas plant', pause: 10000,
-          narration: 'John\'s 30 years of expertise — application-specific recommendations with KB references.' },
-        { label: 'Escalation Check', query: 'I need a filter for 500F hydrogen service', pause: 6000,
-          narration: 'Safety guardrails built in — dangerous conditions auto-escalate to engineering.' },
+        // FLOW 1: Part lookup → chemical check → compare (real workflow)
+        { label: 'Part Lookup', query: '2004355', pause: 6000, flow: 1,
+          narration: 'Flow 1: Start with a part lookup. Rep has a part number from the customer.' },
+        { label: 'Chemical Check', query: 'chemical compatibility of sulfuric acid', pause: 8000, flow: 1,
+          narration: 'Now check if it handles the customer\'s chemical. A/B/C/D ratings instantly.' },
+        { label: 'Find Alternative', query: 'CMBF1-30NN', pause: 6000, flow: 1,
+          narration: 'Customer wants options. Look up an alternative part to compare.' },
+        { label: 'Compare Both', query: 'compare 2004355 vs CMBF1-30NN', pause: 8000, flow: 1,
+          narration: 'Side-by-side comparison. Specs, price, stock — rep picks the winner.' },
+
+        // FLOW 2: Pregame → search → manufacturer (pre-call prep workflow)
+        { label: 'Pre-Call Prep', query: 'pregame brewery', pause: 8000, flow: 2,
+          narration: 'Flow 2: Rep has a brewery call in 5 minutes. Start with industry prep.' },
+        { label: 'Search Products', query: 'search depth sheet', pause: 6000, flow: 2,
+          narration: 'Prep recommended depth sheets. Search to find what\'s in stock.' },
+        { label: 'Browse Filtrox', query: 'manufacturer Filtrox', pause: 6000, flow: 2,
+          narration: 'Filtrox is the depth sheet brand for brewery. Browse their catalog.' },
+
+        // FLOW 3: Natural language → expert → chemical (new customer workflow)
+        { label: 'Customer Describes Need', query: 'I need a filter for hydraulic oil at 10 micron 200F in a refinery', pause: 10000, flow: 3,
+          narration: 'Flow 3: Customer calls with no part number. Just describes what they need.' },
+        { label: 'Ask the Expert', query: 'what filter do I need for glycol dehydration in a gas plant', pause: 10000, flow: 3,
+          narration: 'John\'s 30 years of expertise. Application-specific recommendations with KB references.' },
+        { label: 'Check Acetone', query: 'chemical compatibility of acetone', pause: 8000, flow: 3,
+          narration: 'Customer mentions acetone in their process. Check compatibility instantly.' },
+
+        // FLOW 4: Manufacturer → search → escalation (edge cases)
+        { label: 'Browse PPC', query: 'manufacturer PPC', pause: 6000, flow: 4,
+          narration: 'Flow 4: Rep needs to find a specific brand. Browse PPC\'s full catalog.' },
+        { label: 'Spec Search', query: 'search polypropylene cartridge', pause: 6000, flow: 4,
+          narration: 'Narrow by material. Find every PP cartridge in stock.' },
+        { label: 'Safety Escalation', query: 'I need a filter for 500F hydrogen service', pause: 6000, flow: 4,
+          narration: 'Safety guardrails. Dangerous conditions auto-escalate to engineering. No bad recommendations.' },
     ];
 
     var simState = { running: false, paused: false, step: 0, abortFlag: false };
@@ -2773,8 +2787,9 @@
         if (fillEl) fillEl.style.width = ((idx / SIM_SCENARIOS.length) * 100) + '%';
         if (narrEl) narrEl.textContent = scenario.narration;
 
-        // New chat between scenarios (except first)
-        if (idx > 0 && typeof newChat === 'function') newChat();
+        // New chat only between FLOWS (not between chained steps within a flow)
+        var prevFlow = idx > 0 ? SIM_SCENARIOS[idx - 1].flow : 0;
+        if (idx > 0 && scenario.flow !== prevFlow && typeof newChat === 'function') newChat();
         await simSleep(500);
         if (simState.abortFlag) return;
 
