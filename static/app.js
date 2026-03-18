@@ -517,11 +517,12 @@
         container.className = 'followup-buttons';
         container.style.maxWidth = '85%';
 
+        var followUpsCopy = lastFollowUps.slice();
         labels.forEach(function (label, i) {
             var btn = document.createElement('button');
             btn.className = 'followup-btn';
             btn.textContent = label;
-            btn.onclick = function () { sendMessage(lastFollowUps[i]); };
+            btn.onclick = function () { sendMessage(followUpsCopy[i]); };
             container.appendChild(btn);
         });
 
