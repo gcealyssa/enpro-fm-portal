@@ -1972,37 +1972,17 @@
 <!-- Quick Actions -->
 <div class="quick-actions">
     <div class="qa-row" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%;">
-        <!-- Row 1: Find Products -->
-        <button class="qa-btn" onclick="showModal('search')">
-            <span class="qa-icon">&#128196;</span> Search
-        </button>
         <button class="qa-btn" onclick="showModal('lookup')">
-            <span class="qa-icon">&#128269;</span> Lookup
+            <span class="qa-icon">&#128269;</span> Lookup Part
         </button>
-        <button class="qa-btn" onclick="showModal('manufacturer')">
-            <span class="qa-icon">&#127981;</span> Manufacturer
+        <button class="qa-btn" onclick="openPregamePicker()">
+            <span class="qa-icon">&#127919;</span> Pre-Game
         </button>
-        <button class="qa-btn" onclick="showModal('product_type')">
-            <span class="qa-icon">&#128220;</span> Product Type
-        </button>
-        <button class="qa-btn" onclick="showModal('industry')">
-            <span class="qa-icon">&#127981;</span> Industry
-        </button>
-        <button class="qa-btn" disabled style="opacity:0.4; cursor:not-allowed;" title="Coming Soon">
-            <span class="qa-icon">&#128221;</span> Debrief
-        </button>
-    </div>
-    <div class="qa-divider" style="width:100%; height:1px; background:var(--border); margin:4px 0;"></div>
-    <div class="qa-row" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%;">
-        <!-- Row 2: Take Action -->
-        <button class="qa-btn" onclick="showModal('compare')">
-            <span class="qa-icon">&#9878;</span> Compare
+        <button class="qa-btn" onclick="openQuoteModal()">
+            <span class="qa-icon">&#128203;</span> Quote Ready
         </button>
         <button class="qa-btn" onclick="showModal('chemical')">
             <span class="qa-icon">&#9879;</span> Chemical
-        </button>
-        <button class="qa-btn" onclick="openQuoteModal()">
-            <span class="qa-icon">&#128221;</span> Build Quote
         </button>
     </div>
     <button class="qa-exit-flow" id="exitFlowBtn" onclick="exitFlow()">&#10005; Back</button>
