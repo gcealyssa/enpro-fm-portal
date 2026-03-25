@@ -860,6 +860,7 @@ async def _handle_gpt(
                 search_query = None  # Skip the default search below
                 break
 
+    search_result = {"results": []}
     if search_query:
         search_result = search_products(df, search_query, max_results=5, in_stock_only=False)
         if search_result.get("results"):
