@@ -675,6 +675,17 @@
         html += '<button class="card-action-btn" onclick="pinCardProduct(this)">&#128204; Pin</button>';
         html += '</div>';
 
+        // Follow-up options (V5 style)
+        html += '<div class="card-followups">';
+        html += '<div class="followup-label">Next Steps</div>';
+        html += '<button class="followup-btn" onclick="sendMessage(\'compare ' + esc(String(pn)) + '\')">Compare Alternatives</button>';
+        if (mfg) {
+            html += '<button class="followup-btn" onclick="sendMessage(\'manufacturer ' + esc(String(mfg)).replace(/'/g, "\\'") + '\')">More ' + esc(String(mfg).split(' ')[0]) + ' Products</button>';
+        }
+        html += '<button class="followup-btn" onclick="sendMessage(\'chemical compatibility for ' + esc(String(pn)) + '\')">Chemical Check</button>';
+        html += '<button class="followup-btn" onclick="sendMessage(\'pregame ' + esc(String(ptype || 'filtration')) + '\')">Pregame Meeting</button>';
+        html += '</div>';
+
         // Footer — click to copy, no email app
         html += '<div class="product-footer">';
         html += '<strong>EnPro Inc</strong> &mdash; ';
