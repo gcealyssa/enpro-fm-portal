@@ -416,18 +416,137 @@
         // ==========================================
         // CONFIG - Change this to your Azure Function URL
         // ==========================================
-        const API_URL = 'https://enpro-api-function.azurewebsites.net/api/chat';
+        const API_URL = 'https://enpro-fm-portal.onrender.com/api/chat';
         // const API_URL = '/api/chat'; // For local testing with proxy
         
         let currentLane = 'lookup';
+        let preGameStep = 0;
+        let preGameContext = {};
+        
+        // PRE-GAME SEQUENCE FLOW
+        const PRE_GAME_SEQUENCE = [
+            {
+                step: 1,
+                question: "What industry is this meeting for?",
+                options: ["Brewery", "Oil & Gas", "Chemical Processing", "Pharmaceutical", "Power Generation", "Food & Beverage"],
+                contextKey: "industry"
+            },
+            {
+                step: 2,
+                question: "What's the primary application?",
+                options: ["Filtration", "Separation", "Purification", "Process Water", "Wastewater", "Other"],
+                contextKey: "application"
+            },
+            {
+                step: 3,
+                question: "What's their current pain point?",
+                options: ["High operating costs", "Frequent filter changes", "Quality issues", "Regulatory compliance", "Capacity limitations", "Not sure yet"],
+                contextKey: "painPoint"
+            },
+            {
+                step: 4,
+                question: "Who will be in the meeting?",
+                options: ["Plant Manager", "Engineering", "Purchasing", "Operations", "C-Suite", "Mixed group"],
+                contextKey: "audience"
+            }
+        ];
 
         document.querySelectorAll('.lane').forEach(lane => {
             lane.addEventListener('click', () => {
                 document.querySelectorAll('.lane').forEach(l => l.classList.remove('active'));
                 lane.classList.add('active');
                 currentLane = lane.dataset.lane;
+                
+                // Reset Pre-Game sequence when switching to Pre-Game lane
+                if (currentLane === 'pregame') {
+                    resetPreGame();
+                    showPreGameStep(0);
+                }
             });
         });
+        
+        function resetPreGame() {
+            preGameStep = 0;
+            preGameContext = {};
+        }
+        
+        function showPreGameStep(stepIndex) {
+            if (stepIndex >= PRE_GAME_SEQUENCE.length) {
+                // All steps complete, generate summary
+                generatePreGameSummary();
+                return;
+            }
+            
+            const step = PRE_GAME_SEQUENCE[stepIndex];
+            let optionsHtml = step.options.map((opt, idx) => 
+                `<button onclick="selectPreGameOption(${stepIndex}, '${opt}')" style="margin: 5px; padding: 8px 16px; background: #003366; color: white; border: none; border-radius: 4px; cursor: pointer;">${opt}</button>`
+            ).join('');
+            
+            const chat = document.getElementById('chat');
+            const msg = document.createElement('div');
+            msg.className = 'message bot';
+            msg.innerHTML = `<strong>Step ${step.step} of ${PRE_GAME_SEQUENCE.length}:</strong><br>${step.question}<br><div style="margin-top: 10px;">${optionsHtml}</div>`;
+            chat.appendChild(msg);
+            chat.scrollTop = chat.scrollHeight;
+            
+            // Hide input during Pre-Game sequence
+            document.getElementById('userInput').placeholder = 'Select an option above...';
+            document.getElementById('userInput').disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+        }
+        
+        function selectPreGameOption(stepIndex, option) {
+            const step = PRE_GAME_SEQUENCE[stepIndex];
+            preGameContext[step.contextKey] = option;
+            
+            // Show user selection
+            addMessage(`Selected: ${option}`, 'user');
+            
+            // Move to next step
+            preGameStep = stepIndex + 1;
+            showPreGameStep(preGameStep);
+        }
+        
+        async function generatePreGameSummary() {
+            // Re-enable input
+            document.getElementById('userInput').disabled = false;
+            document.getElementById('sendBtn').disabled = false;
+            document.getElementById('userInput').placeholder = 'Ask about a part, chemical, or product...';
+            
+            // Build context string
+            const contextStr = Object.entries(preGameContext)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(', ');
+            
+            addMessage('⏳ Generating meeting prep based on your inputs...', 'bot');
+            
+            // Send to API with context - request V5 format
+            const message = `Pre-call prep for ${preGameContext.industry} industry, ${preGameContext.application} application. Pain point: ${preGameContext.painPoint}. Audience: ${preGameContext.audience}.
+
+Generate a 5-bullet game plan in this exact format:
+**Customer focus:** What they likely care about
+**Lead product:** Their #1 product match with price
+**Talking points:** 2-3 specific things to mention
+**Key question:** The one closing question to ask
+**Watch out:** Any gotchas`;
+            
+            document.getElementById('typing').classList.add('visible');
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, lane: 'pregame', context: preGameContext })
+                });
+                
+                const data = await response.json();
+                addMessage(data.response || 'Meeting prep generated!', 'bot');
+            } catch (error) {
+                addMessage('❌ Error: ' + error.message, 'bot');
+            } finally {
+                document.getElementById('typing').classList.remove('visible');
+            }
+        }
 
         async function send() {
             const input = document.getElementById('userInput');
