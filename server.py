@@ -9,8 +9,9 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Optional
 
+import httpx
 import pandas as pd
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,6 +23,7 @@ from search import search_products, lookup_part, suggest_parts
 from router import handle_message
 from azure_client import health_check as azure_health_check, close_client
 from governance import run_pre_checks
+from voice_search import init_voice_search, voice_search_pipeline
 
 logger = logging.getLogger("enpro.server")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
@@ -85,6 +87,8 @@ async def lifespan(app: FastAPI):
             f"Data loaded: {len(state.df)} products, "
             f"{len(state.chemicals_df)} chemical entries"
         )
+        # Initialize voice search vocabulary from product data
+        init_voice_search(state.df)
     except Exception as e:
         logger.error(f"Data loading failed: {e}")
         state.data_loaded = False
@@ -558,6 +562,128 @@ async def save_quote(req: QuoteRequest):
 
     logger.info(f"Quote saved: {quote['id']}")
     return {"status": "saved", "quote": quote}
+
+
+# ---------------------------------------------------------------------------
+# Voice Search Endpoints
+# ---------------------------------------------------------------------------
+
+def _whisper_endpoint() -> str:
+    """Build Azure Whisper endpoint. Uses dedicated Whisper resource, falls back to main."""
+    base = settings.AZURE_WHISPER_ENDPOINT or settings.AZURE_OPENAI_ENDPOINT
+    return (
+        f"{base.rstrip('/')}/openai/deployments/"
+        f"{settings.AZURE_WHISPER_DEPLOYMENT}/audio/transcriptions"
+        f"?api-version={settings.AZURE_WHISPER_API_VERSION}"
+    )
+
+
+def _whisper_key() -> str:
+    """Whisper API key. Uses dedicated key, falls back to main."""
+    return settings.AZURE_WHISPER_KEY or settings.AZURE_OPENAI_KEY
+
+
+async def _transcribe(audio_bytes: bytes, filename: str, content_type: str) -> str:
+    """Transcribe audio via Azure Whisper. Returns transcript text or raises."""
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        resp = await client.post(
+            _whisper_endpoint(),
+            headers={"api-key": _whisper_key()},
+            files={
+                "file": (filename, audio_bytes, content_type),
+                "response_format": (None, "json"),
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("text", "").strip()
+
+
+@app.post("/api/stt")
+async def stt(file: UploadFile = File(...)):
+    """Speech-to-text via Azure Whisper. Accepts audio blob from MediaRecorder."""
+    if not _whisper_key():
+        return JSONResponse(status_code=500, content={"error": "Azure Whisper not configured."})
+
+    audio_bytes = await file.read()
+    if not audio_bytes:
+        return JSONResponse(status_code=400, content={"error": "Empty audio file."})
+
+    try:
+        transcript = await _transcribe(
+            audio_bytes, file.filename or "audio.webm", file.content_type or "audio/webm"
+        )
+        logger.info(f"STT transcript: '{transcript}'")
+        return {"text": transcript}
+
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Azure Whisper error: {e.response.text}")
+        return JSONResponse(
+            status_code=e.response.status_code,
+            content={"error": f"Azure Whisper error: {e.response.text}"},
+        )
+    except Exception as e:
+        logger.error(f"STT failed: {e}")
+        return JSONResponse(status_code=500, content={"error": f"STT failed: {str(e)}"})
+
+
+@app.post("/api/voice-search")
+async def voice_search(file: UploadFile = File(...)):
+    """
+    Full voice search pipeline: audio → STT → pre-process → extract → fuzzy resolve → search.
+    Accepts audio blob, returns product results with confidence metadata.
+    """
+    if not state.data_loaded:
+        return JSONResponse(status_code=503, content={"error": "Data not loaded."})
+
+    if not _whisper_key():
+        return JSONResponse(status_code=500, content={"error": "Azure Whisper not configured."})
+
+    audio_bytes = await file.read()
+    if not audio_bytes:
+        return JSONResponse(status_code=400, content={"error": "Empty audio file."})
+
+    try:
+        transcript = await _transcribe(
+            audio_bytes, file.filename or "audio.webm", file.content_type or "audio/webm"
+        )
+        if not transcript:
+            return {"results": [], "total_found": 0, "transcript": "", "error": "Could not transcribe audio."}
+
+    except Exception as e:
+        logger.error(f"Voice search STT failed: {e}")
+        return JSONResponse(status_code=500, content={"error": f"STT failed: {str(e)}"})
+
+    # Step 2: Run the voice search pipeline
+    try:
+        result = await voice_search_pipeline(transcript, state.df)
+        return result
+    except Exception as e:
+        logger.error(f"Voice search pipeline error: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Voice search failed: {str(e)}", "transcript": transcript},
+        )
+
+
+@app.post("/api/voice-search-text")
+async def voice_search_text(req: ChatRequest):
+    """
+    Voice search pipeline from text (for testing without mic).
+    Same pipeline as voice-search but skips STT.
+    """
+    if not state.data_loaded:
+        return JSONResponse(status_code=503, content={"error": "Data not loaded."})
+
+    try:
+        result = await voice_search_pipeline(req.message, state.df)
+        return result
+    except Exception as e:
+        logger.error(f"Voice search text error: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Voice search failed: {str(e)}"},
+        )
 
 
 @app.get("/widget.js")

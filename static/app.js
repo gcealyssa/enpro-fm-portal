@@ -2810,20 +2810,15 @@
         btn.style.pointerEvents = 'none';
     };
 
-    // ── Voice Agent (Speech-to-Text + Text-to-Speech) ──
+    // ── Voice Agent (MediaRecorder → Server STT → Voice Search) ──
     var micBtn = document.getElementById('micBtn');
-    var recognition = null;
     var isListening = false;
     var voiceSynth = window.speechSynthesis;
     var lastInteractionWasVoice = false;
-
-    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var voiceMediaRecorder = null;
+    var voiceAudioChunks = [];
 
     window.toggleVoice = function () {
-        if (!SpeechRecognition) {
-            appendMessage('bot', 'Voice input is not supported in this browser. Try Chrome or Edge.');
-            return;
-        }
         if (isListening) {
             stopListening();
         } else {
@@ -2831,48 +2826,89 @@
         }
     };
 
-    function startListening() {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.interimResults = true;
-        recognition.maxAlternatives = 1;
-        recognition.continuous = false;
-
-        isListening = true;
-        lastInteractionWasVoice = true;
-        micBtn.classList.add('listening');
-        userInput.placeholder = 'Listening...';
-
-        recognition.onresult = function (event) {
-            var transcript = '';
-            for (var i = event.resultIndex; i < event.results.length; i++) {
-                transcript += event.results[i][0].transcript;
-            }
-            userInput.value = transcript;
-            if (event.results[event.results.length - 1].isFinal) {
-                stopListening();
-                if (transcript.trim()) {
-                    handleSend();
-                }
-            }
-        };
-
-        recognition.onerror = function (event) {
-            console.error('Speech error:', event.error);
-            stopListening();
-            if (event.error === 'not-allowed') {
-                appendMessage('bot', 'Microphone access denied. Allow mic access in browser settings.');
-            }
-        };
-
-        recognition.onend = function () {
-            stopListening();
-        };
-
+    async function startListening() {
         try {
-            recognition.start();
+            var stream = await navigator.mediaDevices.getUserMedia({
+                audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true, channelCount: 1 }
+            });
+            voiceAudioChunks = [];
+            var mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+            voiceMediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
+
+            voiceMediaRecorder.ondataavailable = function (e) {
+                if (e.data.size > 0) voiceAudioChunks.push(e.data);
+            };
+
+            voiceMediaRecorder.onstop = async function () {
+                stream.getTracks().forEach(function (t) { t.stop(); });
+                if (voiceAudioChunks.length === 0) { return; }
+
+                var blob = new Blob(voiceAudioChunks, { type: voiceMediaRecorder.mimeType });
+                voiceAudioChunks = [];
+
+                // Show processing state
+                lastInteractionWasVoice = true;
+                userInput.placeholder = 'Processing voice...';
+                appendMessage('user', '🎤 Voice search...');
+
+                try {
+                    var formData = new FormData();
+                    formData.append('file', blob, 'recording.webm');
+                    var resp = await fetch(API_BASE + '/api/voice-search', { method: 'POST', body: formData });
+
+                    if (!resp.ok) {
+                        appendMessage('bot', 'Voice search failed. Try again or type your query.');
+                        userInput.placeholder = 'Ask about a part, chemical, or product...';
+                        return;
+                    }
+
+                    var data = await resp.json();
+
+                    // Show what was heard
+                    if (data.transcript) {
+                        appendMessage('bot', '<em>I heard: "' + esc(data.transcript) + '"</em>');
+                    }
+
+                    // Show confidence suggestions ("Did you mean?")
+                    if (data.suggestions && data.suggestions.length > 0) {
+                        var sugHtml = '<div class="voice-suggestions" style="background:#fff3cd;padding:8px 12px;border-radius:8px;margin:4px 0;font-size:13px;">';
+                        sugHtml += '<strong>Did you mean?</strong><br>';
+                        data.suggestions.forEach(function (s) {
+                            sugHtml += '<span style="color:#856404;">' + esc(s.field) + ': ';
+                            sugHtml += '"' + esc(String(s.original)) + '" → <strong>' + esc(String(s.resolved)) + '</strong>';
+                            sugHtml += ' (' + Math.round(s.confidence * 100) + '%)</span><br>';
+                        });
+                        sugHtml += '</div>';
+                        appendMessage('bot', sugHtml);
+                    }
+
+                    // Render product results using existing card renderer
+                    if (data.results && data.results.length > 0) {
+                        var count = data.total_found || data.results.length;
+                        appendMessage('bot', '<strong>' + count + ' product' + (count !== 1 ? 's' : '') + ' found</strong>' +
+                            (data.filters_applied ? ' <span style="color:#666;font-size:12px;">(' + data.filters_applied.join(', ') + ')</span>' : ''));
+                        data.results.forEach(function (product) {
+                            appendCard(renderProductCard(product));
+                        });
+                    } else {
+                        appendMessage('bot', 'No products found for that voice query. Try being more specific — like "10 micron Pall cartridge in stock".');
+                    }
+
+                } catch (err) {
+                    console.error('Voice search error:', err);
+                    appendMessage('bot', 'Voice search failed. Try typing instead.');
+                }
+
+                userInput.placeholder = 'Ask about a part, chemical, or product...';
+            };
+
+            voiceMediaRecorder.start();
+            isListening = true;
+            micBtn.classList.add('listening');
+            userInput.placeholder = 'Listening... click mic to stop';
         } catch (err) {
-            stopListening();
+            console.error('Mic access error:', err);
+            appendMessage('bot', 'Microphone access denied. Allow mic access in browser settings.');
         }
     }
 
@@ -2880,9 +2916,8 @@
         isListening = false;
         micBtn.classList.remove('listening');
         userInput.placeholder = 'Ask about a part, chemical, or product...';
-        if (recognition) {
-            try { recognition.stop(); } catch (e) {}
-            recognition = null;
+        if (voiceMediaRecorder && voiceMediaRecorder.state === 'recording') {
+            voiceMediaRecorder.stop();
         }
     }
 

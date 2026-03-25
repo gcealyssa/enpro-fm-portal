@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     # Azure Blob Storage
     AZURE_BLOB_SAS: str = Field(default="", description="SAS token for Azure Blob access")
 
+    # Azure Whisper STT (separate resource — northcentralus)
+    AZURE_WHISPER_ENDPOINT: str = Field(default="", description="Azure Whisper endpoint URL (separate from main OpenAI)")
+    AZURE_WHISPER_KEY: str = Field(default="", description="Azure Whisper API key")
+    AZURE_WHISPER_DEPLOYMENT: str = Field(default="whisper", description="Azure Whisper deployment name")
+    AZURE_WHISPER_API_VERSION: str = Field(default="2024-12-01-preview", description="Azure Whisper API version")
+
     # Local paths
     SESSION_DIR: str = Field(default="data/sessions", description="Session storage directory")
     AUDIT_LOG: str = Field(default="data/audit.jsonl", description="Audit log file path")
