@@ -1,0 +1,59 @@
+/* V1 Horizontal Layout - Next Steps Flow Left-to-Right */
+
+/* Next steps container - horizontal flow */
+.next-steps,
+.next-steps-grid,
+.quick-actions-grid,
+.action-cards {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    justify-content: flex-start !important;
+}
+
+/* Individual cards - horizontal */
+.next-step-card,
+.action-card,
+.quick-action-card {
+    flex: 0 1 auto !important;
+    min-width: 120px !important;
+    max-width: 200px !important;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+}
+
+/* Hide the 2x2 grid layout */
+.next-steps-grid:has(> *:nth-child(3)),
+.action-grid {
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+/* Make cards flow horizontally instead of stacking */
+@media (min-width: 600px) {
+    .next-steps-container,
+    .action-container {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        flex-direction: row !important;
+    }
+    
+    .next-step-item,
+    .action-item {
+        flex: 0 1 150px !important;
+        margin: 6px !important;
+    }
+}
+
+/* Ensure cards don't stack vertically */
+.card-grid,
+.tile-grid,
+.button-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+}
