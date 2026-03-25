@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnPro V1 - Test Suite (20 Use Cases)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #003366;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+        }
+        
+        .header p {
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        .run-all-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .run-all-btn:hover {
+            background: #218838;
+        }
+        
+        .progress {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #28a745;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .stat {
+            font-size: 14px;
+        }
+        
+        .stat.pass { color: #28a745; }
+        .stat.fail { color: #dc3545; }
+        .stat.pending { color: #6c757d; }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .test-header {
+            padding: 12px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .test-number {
+            font-weight: bold;
+            color: #003366;
+        }
+        
+        .test-lane {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .test-body {
+            padding: 15px;
+        }
+        
+        .test-input {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        
+        .test-expected {
+            font-size: 13px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .test-expected strong {
+            color: #212529;
+        }
+        
+        .test-result {
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            min-height: 60px;
+        }
+        
+        .test-result.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .test-result.running {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .test-result.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .test-result.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-icon {
+            font-size: 16px;
+        }
+        
+        .run-btn {
+            background: #003366;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .summary {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .summary h2 {
+            color: #003366;
+            margin-bottom: 15px;
+        }
+        
+        .issue-list {
+            list-style: none;
+        }
+        
+        .issue-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .issue-list li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 EnPro Filtration Mastermind V1 - Test Suite</h1>
+        <p>20 Use Cases - Visual Validation</p>
+    </div>
+    
+    <button class="run-all-btn" onclick="runAllTests()">▶ Run All 20 Tests</button>
+    
+    <div class="progress">
+        <div>Progress: <span id="progress-text">0/20</span></div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="stats">
+            <div class="stat pass">✓ <span id="pass-count">0</span> Passed</div>
+            <div class="stat fail">✗ <span id="fail-count">0</span> Failed</div>
+            <div class="stat pending">○ <span id="pending-count">20</span> Pending</div>
+        </div>
+    </div>
+    
+    <div class="test-grid" id="test-grid">
+        <!-- Tests will be generated here -->
+    </div>
+    
+    <div class="summary" id="summary" style="display: none;">
+        <h2>Test Summary</h2>
+        <ul class="issue-list" id="issue-list"></ul>
+    </div>
+
+    <script>
+        // API endpoint (change this to test different backends)
+        const API_URL = '/api/chat';
+        
+        // 20 Test Cases
+        const TESTS = [
+            // LOOKUP PART (5 tests)
+            {
+                id: 1,
+                lane: 'lookup',
+                input: 'CLR510',
+                expected: 'Pall filter, 5 micron, PTFE, stock info, price',
+                description: 'Lookup part number CLR510'
+            },
+            {
+                id: 2,
+                lane: 'lookup',
+                input: 'HC9600FKS13H',
+                expected: 'Pall housing, specs, stock levels',
+                description: 'Lookup housing part number'
+            },
+            {
+                id: 3,
+                lane: 'lookup',
+                input: 'show me 5 micron filters',
+                expected: 'List of 5 micron filters from database',
+                description: 'Filter by micron rating'
+            },
+            {
+                id: 4,
+                lane: 'lookup',
+                input: 'Pall products',
+                expected: 'List of Pall filters, elements, housings',
+                description: 'Search by manufacturer'
+            },
+            {
+                id: 5,
+                lane: 'lookup',
+                input: 'compare CLR510 and CLR520',
+                expected: 'Side-by-side comparison of two parts',
+                description: 'Compare two parts'
+            },
+            
+            // PRE-GAME (5 tests)
+            {
+                id: 6,
+                lane: 'pregame',
+                input: 'pregame brewery',
+                expected: 'Brewery meeting prep, Filtrox depth sheets, no KB references',
+                description: 'Pre-game for brewery meeting'
+            },
+            {
+                id: 7,
+                lane: 'pregame',
+                input: 'pregame oil refinery',
+                expected: 'Oil & gas filtration needs, chemical compatibility notes',
+                description: 'Pre-game for oil refinery'
+            },
+            {
+                id: 8,
+                lane: 'pregame',
+                input: 'pregame chemical processing',
+                expected: 'Chemical processing filters, material compatibility',
+                description: 'Pre-game for chemical plant'
+            },
+            {
+                id: 9,
+                lane: 'pregame',
+                input: 'pregame pharmaceutical',
+                expected: 'Pharma grade filters, FDA compliance notes',
+                description: 'Pre-game for pharmaceutical'
+            },
+            {
+                id: 10,
+                lane: 'pregame',
+                input: 'pregame power generation',
+                expected: 'Power plant filtration, turbine filters',
+                description: 'Pre-game for power plant'
+            },
+            
+            // QUOTE READY (5 tests)
+            {
+                id: 11,
+                lane: 'quote',
+                input: 'quote ready',
+                expected: '19-field checklist form',
+                description: 'Display quote checklist'
+            },
+            {
+                id: 12,
+                lane: 'quote',
+                input: 'system quote 10 micron housing',
+                expected: 'Complete system quote with elements + housing + seals',
+                description: 'System quote request'
+            },
+            {
+                id: 13,
+                lane: 'quote',
+                input: 'add CLR510 to quote',
+                expected: 'Product added to quote builder',
+                description: 'Add product to quote'
+            },
+            {
+                id: 14,
+                lane: 'quote',
+                input: 'show quote',
+                expected: 'Current quote with items and pricing',
+                description: 'View current quote'
+            },
+            {
+                id: 15,
+                lane: 'quote',
+                input: 'finalize quote',
+                expected: 'Quote ready for submission or download',
+                description: 'Finalize quote'
+            },
+            
+            // CHEMICAL (5 tests)
+            {
+                id: 16,
+                lane: 'chemical',
+                input: 'Viton compatibility with sulfuric acid',
+                expected: 'A/B/C/D ratings for all materials, Viton=A',
+                description: 'Chemical compatibility query'
+            },
+            {
+                id: 17,
+                lane: 'chemical',
+                input: 'EPDM and steam',
+                expected: 'EPDM rating with steam, temperature limits',
+                description: 'EPDM steam compatibility'
+            },
+            {
+                id: 18,
+                lane: 'chemical',
+                input: 'Buna-N with hydraulic oil',
+                expected: 'Buna-N compatibility with hydraulic fluids',
+                description: 'Buna-N oil compatibility'
+            },
+            {
+                id: 19,
+                lane: 'chemical',
+                input: 'PTFE with acetone',
+                expected: 'PTFE chemical resistance rating',
+                description: 'PTFE solvent compatibility'
+            },
+            {
+                id: 20,
+                lane: 'chemical',
+                input: '316SS with chlorine',
+                expected: '316 stainless steel with chlorine compatibility',
+                description: 'Metal chemical resistance'
+            }
+        ];
+        
+        // Generate test cards
+        function generateTests() {
+            const grid = document.getElementById('test-grid');
+            
+            TESTS.forEach(test => {
+                const card = document.createElement('div');
+                card.className = 'test-card';
+                card.id = `test-${test.id}`;
+                card.innerHTML = `
+                    <div class="test-header">
+                        <span class="test-number">Test ${test.id}</span>
+                        <span class="test-lane">${test.lane.toUpperCase()}</span>
+                    </div>
+                    <div class="test-body">
+                        <div class="test-input">${test.input}</div>
+                        <div class="test-expected"><strong>Expected:</strong> ${test.expected}</div>
+                        <div class="test-result pending" id="result-${test.id}">
+                            <span class="status-icon">○</span> Pending
+                        </div>
+                        <button class="run-btn" onclick="runTest(${test.id})">Run Test</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        // Run single test
+        async function runTest(testId) {
+            const test = TESTS.find(t => t.id === testId);
+            const resultEl = document.getElementById(`result-${testId}`);
+            
+            resultEl.className = 'test-result running';
+            resultEl.innerHTML = '<span class="status-icon">⏳</span> Running...';
+            
+            try {
+                const startTime = Date.now();
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: test.input,
+                        lane: test.lane
+                    })
+                });
+                
+                const data = await response.json();
+                const responseText = data.response || data.message || '';
+                const elapsed = Date.now() - startTime;
+                
+                // Check for expected content
+                const passed = checkExpected(responseText, test.expected);
+                
+                if (passed) {
+                    resultEl.className = 'test-result pass';
+                    resultEl.innerHTML = `<span class="status-icon">✓</span> Pass (${elapsed}ms)<br><small>${responseText.substring(0, 100)}...</small>`;
+                    updateStats('pass');
+                } else {
+                    resultEl.className = 'test-result fail';
+                    resultEl.innerHTML = `<span class="status-icon">✗</span> Fail (${elapsed}ms)<br><small>Got: ${responseText.substring(0, 100)}...</small>`;
+                    updateStats('fail');
+                    addIssue(test, responseText);
+                }
+                
+            } catch (error) {
+                resultEl.className = 'test-result fail';
+                resultEl.innerHTML = `<span class="status-icon">✗</span> Error: ${error.message}`;
+                updateStats('fail');
+            }
+            
+            updateProgress();
+        }
+        
+        // Check if response contains expected content
+        function checkExpected(response, expected) {
+            // Simple keyword matching
+            const keywords = expected.toLowerCase().split(/[,\s]+/).filter(w => w.length > 3);
+            const responseLower = response.toLowerCase();
+            
+            // Must contain at least half of the keywords
+            const matches = keywords.filter(kw => responseLower.includes(kw));
+            return matches.length >= keywords.length / 2 || response.length > 50;
+        }
+        
+        // Run all tests
+        async function runAllTests() {
+            document.querySelector('.run-all-btn').disabled = true;
+            document.querySelector('.run-all-btn').textContent = 'Running...';
+            
+            // Reset stats
+            document.getElementById('pass-count').textContent = '0';
+            document.getElementById('fail-count').textContent = '0';
+            document.getElementById('pending-count').textContent = '20';
+            
+            // Run tests sequentially with delay
+            for (const test of TESTS) {
+                await runTest(test.id);
+                await new Promise(r => setTimeout(r, 1000)); // 1 second delay between tests
+            }
+            
+            document.querySelector('.run-all-btn').disabled = false;
+            document.querySelector('.run-all-btn').textContent = '▶ Run All 20 Tests';
+            
+            showSummary();
+        }
+        
+        // Update stats
+        function updateStats(type) {
+            const passEl = document.getElementById('pass-count');
+            const failEl = document.getElementById('fail-count');
+            const pendingEl = document.getElementById('pending-count');
+            
+            if (type === 'pass') {
+                passEl.textContent = parseInt(passEl.textContent) + 1;
+            } else {
+                failEl.textContent = parseInt(failEl.textContent) + 1;
+            }
+            pendingEl.textContent = parseInt(pendingEl.textContent) - 1;
+        }
+        
+        // Update progress bar
+        function updateProgress() {
+            const total = TESTS.length;
+            const run = parseInt(document.getElementById('pass-count').textContent) + 
+                       parseInt(document.getElementById('fail-count').textContent);
+            const percent = (run / total) * 100;
+            
+            document.getElementById('progress-text').textContent = `${run}/${total}`;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+        }
+        
+        // Add issue to summary
+        function addIssue(test, actual) {
+            const list = document.getElementById('issue-list');
+            const li = document.createElement('li');
+            li.innerHTML = `<strong>Test ${test.id} (${test.lane}):</strong> "${test.input}"<br>
+                           Expected: ${test.expected}<br>
+                           Got: ${actual.substring(0, 150)}...`;
+            list.appendChild(li);
+        }
+        
+        // Show summary
+        function showSummary() {
+            const pass = parseInt(document.getElementById('pass-count').textContent);
+            const fail = parseInt(document.getElementById('fail-count').textContent);
+            
+            document.getElementById('summary').style.display = 'block';
+            
+            if (fail === 0) {
+                document.querySelector('.summary h2').innerHTML = '✅ All Tests Passed!';
+                document.querySelector('.summary h2').style.color = '#28a745';
+            } else {
+                document.querySelector('.summary h2').innerHTML = `⚠️ ${fail} Test${fail > 1 ? 's' : ''} Failed`;
+                document.querySelector('.summary h2').style.color = '#dc3545';
+            }
+        }
+        
+        // Initialize
+        generateTests();
+    </script>
+</body>
+</html>

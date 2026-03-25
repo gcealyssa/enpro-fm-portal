@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnPro V1 - Visual Use Case Checklist</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #003366 0%, #004080 100%);
+            color: white;
+            padding: 25px;
+            margin: -20px -20px 20px -20px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+        
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .stat-box h3 {
+            font-size: 32px;
+            color: #003366;
+        }
+        
+        .stat-box label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .lane-section {
+            margin-bottom: 30px;
+        }
+        
+        .lane-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid;
+        }
+        
+        .lane-header.lookup { border-color: #3498db; }
+        .lane-header.pregame { border-color: #9b59b6; }
+        .lane-header.quote { border-color: #27ae60; }
+        .lane-header.chemical { border-color: #e74c3c; }
+        
+        .lane-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .lane-header.lookup .lane-icon { background: #3498db; color: white; }
+        .lane-header.pregame .lane-icon { background: #9b59b6; color: white; }
+        .lane-header.quote .lane-icon { background: #27ae60; color: white; }
+        .lane-header.chemical .lane-icon { background: #e74c3c; color: white; }
+        
+        .lane-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .lane-subtitle {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .use-case-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .use-case {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        
+        .use-case:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .use-case-header {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .use-case.lookup .use-case-header { background: #ebf5fb; }
+        .use-case.pregame .use-case-header { background: #f5eef8; }
+        .use-case.quote .use-case-header { background: #eafaf1; }
+        .use-case.chemical .use-case-header { background: #fdedec; }
+        
+        .use-case-number {
+            font-weight: bold;
+            color: #003366;
+            font-size: 14px;
+        }
+        
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .checkbox:hover {
+            border-color: #28a745;
+        }
+        
+        .checkbox.checked {
+            background: #28a745;
+            border-color: #28a745;
+        }
+        
+        .checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+        }
+        
+        .use-case-body {
+            padding: 15px;
+        }
+        
+        .prompt-box {
+            background: #f8f9fa;
+            border-left: 3px solid #003366;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            font-size: 13px;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .expected-outcome {
+            font-size: 13px;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .expected-outcome strong {
+            color: #212529;
+        }
+        
+        .test-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .btn-test {
+            background: #003366;
+            color: white;
+        }
+        
+        .btn-test:hover {
+            background: #004080;
+        }
+        
+        .btn-copy {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .btn-copy:hover {
+            background: #dee2e6;
+        }
+        
+        .result-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #6c757d;
+            min-height: 40px;
+        }
+        
+        .result-preview.has-content {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .progress-section {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-width: 250px;
+        }
+        
+        .progress-bar {
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-box {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        .legend-box.lookup { background: #ebf5fb; border: 1px solid #3498db; }
+        .legend-box.pregame { background: #f5eef8; border: 1px solid #9b59b6; }
+        .legend-box.quote { background: #eafaf1; border: 1px solid #27ae60; }
+        .legend-box.chemical { background: #fdedec; border: 1px solid #e74c3c; }
+        
+        .copy-toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .copy-toast.show {
+            opacity: 1;
+        }
+        
+        @media print {
+            .progress-section { display: none; }
+            .checkbox { border: 2px solid #000; }
+            .checkbox.checked { background: #000; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 EnPro Filtration Mastermind V1.0</h1>
+        <p>Visual Use Case Checklist - 20 Test Scenarios Across 4 Swim Lanes</p>
+    </div>
+    
+    <div class="stats-bar">
+        <div class="stat-box">
+            <h3 id="completed-count">0</h3>
+            <label>Completed</label>
+        </div>
+        <div class="stat-box">
+            <h3 id="remaining-count">20</h3>
+            <label>Remaining</label>
+        </div>
+        <div class="stat-box">
+            <h3>4</h3>
+            <label>Swim Lanes</label>
+        </div>
+        <div class="stat-box">
+            <h3>19,470</h3>
+            <label>Products</label>
+        </div>
+    </div>
+    
+    <!-- LOOKUP PART -->
+    <div class="lane-section">
+        <div class="lane-header lookup">
+            <div class="lane-icon">🔍</div>
+            <div>
+                <div class="lane-title">LOOKUP PART</div>
+                <div class="lane-subtitle">Product search, specs, and comparisons</div>
+            </div>
+        </div>
+        <div class="use-case-grid" id="lookup-grid">
+            <!-- Use cases generated by JS -->
+        </div>
+    </div>
+    
+    <!-- PRE-GAME -->
+    <div class="lane-section">
+        <div class="lane-header pregame">
+            <div class="lane-icon">🎯</div>
+            <div>
+                <div class="lane-title">PRE-GAME</div>
+                <div class="lane-subtitle">Pre-call preparation and industry context</div>
+            </div>
+        </div>
+        <div class="use-case-grid" id="pregame-grid">
+            <!-- Use cases generated by JS -->
+        </div>
+    </div>
+    
+    <!-- QUOTE READY -->
+    <div class="lane-section">
+        <div class="lane-header quote">
+            <div class="lane-icon">💰</div>
+            <div>
+                <div class="lane-title">QUOTE READY</div>
+                <div class="lane-subtitle">Quote building and checklist validation</div>
+            </div>
+        </div>
+        <div class="use-case-grid" id="quote-grid">
+            <!-- Use cases generated by JS -->
+        </div>
+    </div>
+    
+    <!-- CHEMICAL -->
+    <div class="lane-section">
+        <div class="lane-header chemical">
+            <div class="lane-icon">🧪</div>
+            <div>
+                <div class="lane-title">CHEMICAL</div>
+                <div class="lane-subtitle">Material compatibility and chemical resistance</div>
+            </div>
+        </div>
+        <div class="use-case-grid" id="chemical-grid">
+            <!-- Use cases generated by JS -->
+        </div>
+    </div>
+    
+    <!-- Progress Widget -->
+    <div class="progress-section">
+        <div style="font-weight: bold; margin-bottom: 5px;">Progress</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div id="progress-text">0/20 (0%)</div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box lookup"></div>
+                <span>Lookup</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box pregame"></div>
+                <span>Pre-Game</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box quote"></div>
+                <span>Quote</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box chemical"></div>
+                <span>Chemical</span>
+            </div>
+        </div>
+        
+        <button class="btn btn-test" onclick="resetAll()" style="margin-top: 15px; width: 100%;">
+            🔄 Reset All
+        </button>
+    </div>
+    
+    <div class="copy-toast" id="copy-toast">Copied to clipboard!</div>
+
+    <script>
+        // All 20 Use Cases
+        const USE_CASES = [
+            // LOOKUP (1-5)
+            { id: 1, lane: 'lookup', prompt: 'CLR510', expected: 'Pall filter specs, 5 micron, PTFE, stock info, price' },
+            { id: 2, lane: 'lookup', prompt: 'HC9600FKS13H', expected: 'Pall housing specifications and stock levels' },
+            { id: 3, lane: 'lookup', prompt: 'show me 5 micron filters', expected: 'List of 5 micron filters from database' },
+            { id: 4, lane: 'lookup', prompt: 'Pall products', expected: 'List of Pall filters, elements, and housings' },
+            { id: 5, lane: 'lookup', prompt: 'compare CLR510 and CLR520', expected: 'Side-by-side comparison table' },
+            
+            // PRE-GAME (6-10)
+            { id: 6, lane: 'pregame', prompt: 'pregame brewery', expected: 'Brewery meeting prep, Filtrox depth sheets, NO KB refs' },
+            { id: 7, lane: 'pregame', prompt: 'pregame oil refinery', expected: 'Oil & gas filtration needs, chemical compatibility' },
+            { id: 8, lane: 'pregame', prompt: 'pregame chemical processing', expected: 'Chemical processing filters, material compatibility' },
+            { id: 9, lane: 'pregame', prompt: 'pregame pharmaceutical', expected: 'Pharma grade filters, FDA compliance notes' },
+            { id: 10, lane: 'pregame', prompt: 'pregame power generation', expected: 'Power plant filtration, turbine filters' },
+            
+            // QUOTE (11-15)
+            { id: 11, lane: 'quote', prompt: 'quote ready', expected: '19-field checklist form displayed' },
+            { id: 12, lane: 'quote', prompt: 'system quote 10 micron housing', expected: 'Complete system quote (elements + housing + seals)' },
+            { id: 13, lane: 'quote', prompt: 'add CLR510 to quote', expected: 'Product added to quote builder' },
+            { id: 14, lane: 'quote', prompt: 'show quote', expected: 'Current quote with items and pricing' },
+            { id: 15, lane: 'quote', prompt: 'finalize quote', expected: 'Quote ready for submission/download' },
+            
+            // CHEMICAL (16-20)
+            { id: 16, lane: 'chemical', prompt: 'Viton compatibility with sulfuric acid', expected: 'A/B/C/D ratings for all materials, Viton=A' },
+            { id: 17, lane: 'chemical', prompt: 'EPDM and steam', expected: 'EPDM rating with steam, temperature limits' },
+            { id: 18, lane: 'chemical', prompt: 'Buna-N with hydraulic oil', expected: 'Buna-N compatibility with hydraulic fluids' },
+            { id: 19, lane: 'chemical', prompt: 'PTFE with acetone', expected: 'PTFE chemical resistance rating (typically A)' },
+            { id: 20, lane: 'chemical', prompt: '316SS with chlorine', expected: '316 stainless steel chlorine compatibility' }
+        ];
+        
+        // Track completed state
+        let completed = new Set(JSON.parse(localStorage.getItem('v1_test_completed') || '[]'));
+        
+        // Render use cases
+        function renderUseCases() {
+            USE_CASES.forEach(uc => {
+                const grid = document.getElementById(`${uc.lane}-grid`);
+                const isChecked = completed.has(uc.id);
+                
+                const el = document.createElement('div');
+                el.className = `use-case ${uc.lane}`;
+                el.innerHTML = `
+                    <div class="use-case-header">
+                        <span class="use-case-number">#${uc.id}</span>
+                        <div class="checkbox ${isChecked ? 'checked' : ''}" onclick="toggleCheck(${uc.id})" id="checkbox-${uc.id}"></div>
+                    </div>
+                    <div class="use-case-body">
+                        <div class="prompt-box">${uc.prompt}</div>
+                        <div class="expected-outcome"><strong>Expected:</strong> ${uc.expected}</div>
+                        <div class="test-actions">
+                            <button class="btn btn-test" onclick="testPrompt('${uc.prompt}', ${uc.id})">▶ Test</button>
+                            <button class="btn btn-copy" onclick="copyPrompt('${uc.prompt}')">📋 Copy</button>
+                        </div>
+                        <div class="result-preview" id="result-${uc.id}">
+                            ${isChecked ? '✓ Tested & verified' : 'Click Test to verify in app'}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(el);
+            });
+            
+            updateProgress();
+        }
+        
+        // Toggle checkbox
+        function toggleCheck(id) {
+            const checkbox = document.getElementById(`checkbox-${id}`);
+            const result = document.getElementById(`result-${id}`);
+            
+            if (completed.has(id)) {
+                completed.delete(id);
+                checkbox.classList.remove('checked');
+                result.classList.remove('has-content');
+                result.textContent = 'Click Test to verify in app';
+            } else {
+                completed.add(id);
+                checkbox.classList.add('checked');
+                result.classList.add('has-content');
+                result.textContent = '✓ Tested & verified';
+            }
+            
+            localStorage.setItem('v1_test_completed', JSON.stringify([...completed]));
+            updateProgress();
+        }
+        
+        // Update progress
+        function updateProgress() {
+            const count = completed.size;
+            const percent = (count / 20) * 100;
+            
+            document.getElementById('completed-count').textContent = count;
+            document.getElementById('remaining-count').textContent = 20 - count;
+            document.getElementById('progress-text').textContent = `${count}/20 (${Math.round(percent)}%)`;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+        }
+        
+        // Test prompt - opens app in new tab
+        function testPrompt(prompt, id) {
+            // Open the app with the prompt
+            const url = `https://polite-moss-07d02980f.1.azurestaticapps.net/?prompt=${encodeURIComponent(prompt)}&lane=${USE_CASES.find(u => u.id === id).lane}`;
+            window.open(url, '_blank');
+            
+            // Auto-check after a delay
+            setTimeout(() => {
+                if (!completed.has(id)) {
+                    toggleCheck(id);
+                }
+            }, 5000);
+        }
+        
+        // Copy prompt
+        function copyPrompt(prompt) {
+            navigator.clipboard.writeText(prompt).then(() => {
+                const toast = document.getElementById('copy-toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
+            });
+        }
+        
+        // Reset all
+        function resetAll() {
+            if (confirm('Reset all test progress?')) {
+                completed.clear();
+                localStorage.removeItem('v1_test_completed');
+                document.querySelectorAll('.checkbox').forEach(cb => cb.classList.remove('checked'));
+                document.querySelectorAll('.result-preview').forEach(rp => {
+                    rp.classList.remove('has-content');
+                    rp.textContent = 'Click Test to verify in app';
+                });
+                updateProgress();
+            }
+        }
+        
+        // Initialize
+        renderUseCases();
+    </script>
+</body>
+</html>
