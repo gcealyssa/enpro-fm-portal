@@ -413,6 +413,12 @@
     </div>
 
     <script>
+        // ==========================================
+        // CONFIG - Change this to your Azure Function URL
+        // ==========================================
+        const API_URL = 'https://enpro-api-function.azurewebsites.net/api/chat';
+        // const API_URL = '/api/chat'; // For local testing with proxy
+        
         let currentLane = 'lookup';
 
         document.querySelectorAll('.lane').forEach(lane => {
@@ -431,22 +437,67 @@
             addMessage(message, 'user');
             input.value = '';
 
-            document.getElementById('typing').classList.add('visible');
-            document.getElementById('sendBtn').disabled = true;
+            const typingEl = document.getElementById('typing');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            typingEl.classList.add('visible');
+            typingEl.querySelector('span').textContent = 'Thinking...';
+            sendBtn.disabled = true;
 
             try {
-                const response = await fetch('/api/chat', {
+                // Add timeout for Render cold start (30 seconds)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 35000);
+                
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message, lane: currentLane })
+                    body: JSON.stringify({ message, lane: currentLane }),
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
+                
+                // Check if response is valid JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Server error (Status: ${response.status}). The API may be waking up. Try again in a few seconds.`);
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                }
+                
                 const data = await response.json();
-                addMessage(data.response || 'No response', 'bot');
+                
+                if (data.error) {
+                    addMessage('⚠️ ' + data.error, 'bot');
+                } else if (data.response) {
+                    addMessage(data.response, 'bot');
+                } else {
+                    addMessage('⚠️ Received empty response from server', 'bot');
+                }
+                
             } catch (error) {
-                addMessage('Error: ' + error.message, 'bot');
+                console.error('Send error:', error);
+                
+                let errorMsg = '❌ ';
+                if (error.name === 'AbortError') {
+                    errorMsg += 'Request timed out. The API may be starting up. Please try again.';
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMsg += 'Cannot connect to API. Check your internet connection or try again.';
+                } else if (error.message.includes('JSON')) {
+                    errorMsg += 'Backend error. The API returned invalid data. Please try again or contact support.';
+                } else {
+                    errorMsg += error.message;
+                }
+                
+                addMessage(errorMsg, 'bot');
             } finally {
-                document.getElementById('typing').classList.remove('visible');
-                document.getElementById('sendBtn').disabled = false;
+                typingEl.classList.remove('visible');
+                typingEl.querySelector('span').textContent = 'Thinking';
+                sendBtn.disabled = false;
             }
         }
 

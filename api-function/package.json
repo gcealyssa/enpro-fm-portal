@@ -1,0 +1,12 @@
+{
+  "name": "enpro-api",
+  "version": "1.0.0",
+  "description": "EnPro Filtration API - Azure Functions",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet...\""
+  },
+  "dependencies": {
+    "openai": "^4.20.0"
+  }
+}
